@@ -1,6 +1,7 @@
 # TCP Project - MC833
+Professor Edmundo Madeira
 
-Compare o uso de sockets para comunicação cliente com
+Compare o uso de sockets para comunicação cliente com:
 - servidor concorrente sobre TCP, e 
 - servidor iterativo sobre UDP
 
@@ -12,3 +13,4 @@ O servidor armazena informações sobre disciplinas: título, ementa, sala de
   - listar todas as informações de todas as disciplinas;
   - escrever um texto de comentário sobre a próxima aula de uma disciplina (apenas usuário professor);
   - dado o código de uma disciplina, retornar o texto de comentário sobre a próxima aula.
+
