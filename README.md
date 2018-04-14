@@ -1,5 +1,4 @@
 # TCP Project - MC833
-Professor Edmundo Madeira
 
 Compare o uso de sockets para comunicação cliente com:
 - servidor concorrente sobre TCP, e 
@@ -14,3 +13,5 @@ O servidor armazena informações sobre disciplinas: título, ementa, sala de
   - escrever um texto de comentário sobre a próxima aula de uma disciplina (apenas usuário professor);
   - dado o código de uma disciplina, retornar o texto de comentário sobre a próxima aula.
 
+
+ -- Criador por: Professor Edmundo Madeira, IC Unicamp.
