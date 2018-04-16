@@ -8,15 +8,12 @@ default: $(TARGET)
 all: default
 
 # Change to default mysql install folder!! Check with mysql_config --cflags and --libs to check if necessary
-MYSQL-C-DIR = /usr/local/mysql
-
-# Folders where the lib and headers for the c connector
-#HEADERS = -I$(MYSQL-C-DIR)/include
-#LIBS = -L$(MYSQL-C-DIR)/lib -lmysqlclient
+MYSQL_C_DIR = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))mysql-connector-c/bin/
 
 # Test to automate mysql folder location
 MYSQL_FLAGS = `mysql_config --cflags --libs`
 
 # Basic compilation
 % : %.c
+	export PATH=$(MYSQL_C_DIR):$(PATH)
 	$(CC) $(CFLAGS) -o $@ $< $(MYSQL_FLAGS)

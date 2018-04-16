@@ -21,7 +21,7 @@ mkdir $DIRTMP > /dev/null 2>&1
 
 sed "s#DATA_DIR#$DIR#g;" $DIR/create_db.c > $DIRTMP/create_db_tmp.c
 
-cp $DIR/Makefile $DIRTMP/ && cd $DIRTMP/ && make create_db_tmp && ./create_db_tmp
+make $DIRTMP/create_db_tmp && cd $DIRTMP/ && ./create_db_tmp
 
 FILE_RETURN=$?
 
