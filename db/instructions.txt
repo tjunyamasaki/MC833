@@ -1,0 +1,12 @@
+Instalacao do servidor!!
+
+1 - chmod a+x create_db.sh
+2 - rodar ./create_db.sh para iniciar BD local do projeto1. Para isso, inserir User e Senha do mysql admin quando pedido.
+3 - make db_server
+4 - ./db_server
+
+Usuarios configurados previamente:
+root/localhost - '??' (Conta gerente local de sua maquina.)
+aluno - 'senha123'
+professor - 'senha123'
+
