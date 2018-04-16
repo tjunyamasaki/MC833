@@ -8,6 +8,7 @@
 // Funcoes auxiliares
 void finish_with_error(MYSQL *con);
 void login_server(MYSQL *con);
+void execute_querry(MYSQL *con, char* querry_command);
 void display_results(MYSQL *con);
 void get_user_role(MYSQL *con, char *user_role, char *username);
 
@@ -66,7 +67,7 @@ int main(int argc, char **argv)
   exit(0);
 }
 
-// *********************** Funcoes AUXILIARES ***********************
+// *********************** Funcoes AUXILIARES *********************** //
 
 void login_server(MYSQL *con)
 {
@@ -206,6 +207,14 @@ void finish_with_error(MYSQL *con)
   exit(1);
 }
 
+// Executa querry
+void execute_querry(MYSQL *con, char* querry_command)
+{
+  if (mysql_query(con, querry_command)) {
+      finish_with_error(con);
+  }
+}
+
 // Printa resultados de uma consulta
 void display_results(MYSQL *con)
 {
@@ -221,7 +230,7 @@ void display_results(MYSQL *con)
   MYSQL_ROW row;
   MYSQL_FIELD *field;
 
-  // Lembrar da ideia de salvar tudo em uma matriz de char*, achar o maxlenght de cada coluna, e rodar um for printando espacos pra igualar a diferenca de tamanho entre cada item da coluna. 
+  // Lembrar da ideia de salvar tudo em uma matriz de char*, achar o maxlenght de cada coluna, e rodar um for printando espacos pra igualar a diferenca de tamanho entre cada item da coluna.
 
   printf("--------------------------------------- \n");
   while(field = mysql_fetch_field(result))
@@ -249,10 +258,8 @@ void get_user_role(MYSQL *con, char *user_role, char *username)
   strcpy(querry_command, "SELECT TIPO FROM USUARIOS WHERE USERNAME = '");
   strcat(querry_command, username);
   strcat(querry_command, "';");
+  execute_querry(con, querry_command);
 
-  if (mysql_query(con, querry_command)) {
-      finish_with_error(con);
-  }
   MYSQL_RES *result = mysql_store_result(con);
 
   if (result == NULL)
@@ -274,7 +281,7 @@ void get_user_role(MYSQL *con, char *user_role, char *username)
   mysql_free_result(result);
 }
 
-// *********************** Operacoes do ADMIN ***********************
+// *********************** Operacoes do ADMIN *********************** //
 
 // Lista usuarios cadastrados no BD
 void list_users(MYSQL *con)
@@ -285,9 +292,7 @@ void list_users(MYSQL *con)
   printf(" 1 -> Listar usuarios\n");
   printf("---------------------------------------\n\n");
 
-  if (mysql_query(con, querry_command)) {
-    finish_with_error(con);
-  }
+  execute_querry(con, querry_command);
   display_results(con);
 }
 
@@ -300,7 +305,6 @@ void create_user(MYSQL *con)
   printf("\n---------------------------------------\n");
   printf(" 2 -> Criar usuario\n");
   printf("---------------------------------------\n\n");
-
 
   printf("Digite o username que sera criado:\n");
   scanf("%s", username);
@@ -335,19 +339,11 @@ void create_user(MYSQL *con)
   strcat(querry_command, "'@'localhost' IDENTIFIED BY '");
   strcat(querry_command, password);
   strcat(querry_command, "';");
-
-  if (mysql_query(con, querry_command)) {
-    finish_with_error(con);
-  }
+  execute_querry(con, querry_command);
 
   strcpy(querry_command, "FLUSH PRIVILEGES;");
-  if (mysql_query(con, querry_command)) {
-    finish_with_error(con);
-  }
-
-  if (mysql_query(con, insert_command)) {
-    finish_with_error(con);
-  }
+  execute_querry(con, querry_command);
+  execute_querry(con, insert_command);
 
   printf("--------------------------------------- \n\n");
 }
@@ -367,28 +363,20 @@ void delete_user(MYSQL *con)
   strcpy(querry_command, "DROP USER '");
   strcat(querry_command, username);
   strcat(querry_command, "'@'localhost';");
-
-  if (mysql_query(con, querry_command)) {
-    finish_with_error(con);
-  }
+  execute_querry(con, querry_command);
 
   strcpy(querry_command, "DELETE FROM USUARIOS WHERE USERNAME='");
   strcat(querry_command, username);
   strcat(querry_command, "';");
-
-  if (mysql_query(con, querry_command)) {
-    finish_with_error(con);
-  }
+  execute_querry(con, querry_command);
 
   strcpy(querry_command, "FLUSH PRIVILEGES;");
-  if (mysql_query(con, querry_command)) {
-    finish_with_error(con);
-  }
+  execute_querry(con, querry_command);
 
   printf("--------------------------------------- \n\n");
 }
 
-// *********************** Operacoes ALUNO/PROFESSOR ***********************
+// *********************** Operacoes ALUNO/PROFESSOR *********************** //
 
 // Listar todos os códigos de disciplinas com seus respectivos títulos;
 void list_codes(MYSQL *con)
@@ -400,10 +388,8 @@ void list_codes(MYSQL *con)
   printf("---------------------------------------\n\n");
 
   strcpy(querry_command, "SELECT CODIGO_DISCIPLINA AS CODIGO, TITULO FROM DISCIPLINAS;");
+  execute_querry(con, querry_command);
 
-  if (mysql_query(con, querry_command)) {
-      finish_with_error(con);
-  }
   display_results(con);
 }
 
@@ -422,10 +408,8 @@ void get_ementa(MYSQL *con)
   strcpy(querry_command, "SELECT EMENTA FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
   strcat(querry_command, search_code);
   strcat(querry_command, "';");
+  execute_querry(con, querry_command);
 
-  if (mysql_query(con, querry_command)) {
-      finish_with_error(con);
-  }
   display_results(con);
 }
 
@@ -444,10 +428,8 @@ void get_comment(MYSQL *con)
   strcpy(querry_command, "SELECT COMENTARIO FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
   strcat(querry_command, search_code);
   strcat(querry_command, "';");
+  execute_querry(con, querry_command);
 
-  if (mysql_query(con, querry_command)) {
-      finish_with_error(con);
-  }
   display_results(con);
 }
 
@@ -466,10 +448,8 @@ void get_full_info(MYSQL *con)
   strcpy(querry_command, "SELECT * FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
   strcat(querry_command, search_code);
   strcat(querry_command, "';");
+  execute_querry(con, querry_command);
 
-  if (mysql_query(con, querry_command)) {
-      finish_with_error(con);
-  }
   display_results(con);
 }
 
@@ -483,14 +463,12 @@ void get_all_info(MYSQL *con)
   printf("---------------------------------------\n\n");
 
   strcpy(querry_command, "SELECT * FROM DISCIPLINAS;");
+  execute_querry(con, querry_command);
 
-  if (mysql_query(con, querry_command)) {
-      finish_with_error(con);
-  }
   display_results(con);
 }
 
-// *********************** Operacoes do PROFESSOR ***********************
+// *********************** Operacoes do PROFESSOR *********************** //
 
 // Escrever um texto de comentário sobre a próxima aula de uma disciplina (apenas usuário professor)
 void write_comment(MYSQL *con)
@@ -505,6 +483,7 @@ void write_comment(MYSQL *con)
   scanf("%s", search_code);
 
   printf("\nDigite o comentario que deseja inserir em %s:\n", search_code);
+  scanf(" ", search_code);
   fgets(comment, sizeof(comment), stdin);
 
   strcpy(querry_command, "UPDATE DISCIPLINAS SET COMENTARIO = '");
@@ -513,8 +492,6 @@ void write_comment(MYSQL *con)
   strcat(querry_command, search_code);
   strcat(querry_command, "';");
 
-  if (mysql_query(con, querry_command)) {
-      finish_with_error(con);
-  }
+  execute_querry(con, querry_command);
   printf("---------------------------------------\n\n");
 }
