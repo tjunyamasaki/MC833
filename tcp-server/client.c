@@ -18,6 +18,8 @@
 
 #define MAXDATASIZE 1500 // max number of bytes we can get at once
 
+#define BUFFER_SIZE 1024
+
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -30,11 +32,15 @@ void *get_in_addr(struct sockaddr *sa)
 
 int main(int argc, char *argv[])
 {
-	int sockfd, numbytes;
-	char buf[MAXDATASIZE];
+	int sockfd;
+	// int numbytes;
+	// char buf[MAXDATASIZE];
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
+
+
+	char buffer[BUFFER_SIZE];
 
 	if (argc != 2) {
 	    fprintf(stderr,"Usage: Client Hostname\n");
@@ -78,14 +84,81 @@ int main(int argc, char *argv[])
 
 	freeaddrinfo(servinfo); // all done with this structure
 
-	if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	    perror("recv");
-	    exit(1);
+	//Loop de requests
+
+	// char request[50];
+
+	int choice = 1;
+
+	while (choice) {
+		printf("Enter with a number:\n");
+		// printf("1. \n");
+		// printf("2. \n");
+		// printf("3. \n");
+		// printf("4. \n");
+		// printf("5. \n");
+		// printf("6. \n");
+		printf("7. \n");
+		printf("0. Exit\n");
+		scanf("%d", &choice);
+		while ((getchar()) != '\n');
+		switch (choice) {
+
+			case 7:
+
+				printf("Please say something to me:\n");
+
+				bzero(buffer, BUFFER_SIZE);
+
+				// printf("BUFFER: %s\n", buffer);
+
+				fgets(buffer, BUFFER_SIZE-1, stdin);
+
+				int num = write(sockfd, buffer, strlen(buffer));
+
+				if (num < 0) {
+					perror("ERROR: Writing to socket didnt go well..");
+					exit(0);
+				}
+
+				bzero(buffer, BUFFER_SIZE);
+
+				num = read(sockfd, buffer, BUFFER_SIZE-1);
+
+				if (num < 0) {
+					perror("ERROR: Reading from socket didnt go well..");
+					exit(0);
+				}
+
+				printf("This is what you asked for.. : %s\n", buffer);
+
+				printf("hello\n");
+
+				break;
+
+			case 0:
+				break;
+			default:
+				printf("Invalid argument\n");
+				break;
+		}
 	}
 
-	buf[numbytes] = '\0';
+	// while(strcmp(request,"quit\n") != 0) {
+	//
+	// }
 
-	printf("Client: received '%s'\n",buf);
+
+
+
+	// if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+	//     perror("recv");
+	//     exit(1);
+	// }
+
+	// buf[numbytes] = '\0';
+	//
+	// printf("Client: received '%s'\n",buf);
 
 	close(sockfd);
 

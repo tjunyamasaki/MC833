@@ -19,6 +19,8 @@
 
 #define BACKLOG 10	 // how many pending connections queue will hold
 
+#define BUFFER_SIZE 1024
+
 void sigchld_handler(int s)
 {
 	(void)s; // quiet unused variable warning
@@ -52,6 +54,10 @@ int main(void)
 	int yes=1;
 	char s[INET6_ADDRSTRLEN];
 	int rv;
+
+
+	// Buffer
+	char buffer[BUFFER_SIZE];
 
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
@@ -119,7 +125,32 @@ int main(void)
 		inet_ntop(their_addr.ss_family,
 			get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s);
-		printf("Server: Got connection from %s\n", s);
+		printf("Got connection from %s\n\n", s);
+
+		//Loop de consultas
+
+		// while(1) {
+
+			printf("Cmon say something to me!! \n");
+			bzero(buffer,BUFFER_SIZE);
+			int num = read(new_fd, buffer, BUFFER_SIZE-1);
+
+			if (num < 0) {
+				perror("ERROR: Reading from socket didnt go well..");
+				exit(0);
+			}
+
+			printf("Here is what you got: %s\n", buffer);
+
+			num = write(new_fd, buffer, 11);
+
+			if (num < 0) {
+				perror("ERROR: Writing to socket didnt go well..");
+				exit(0);
+			}
+
+		// }
+
 
 		if (!fork()) { // this is the child process
 			close(sockfd); // child doesn't need the listener
