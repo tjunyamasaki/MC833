@@ -1,6 +1,8 @@
 Pre-Requisitos para inicializar o BD:
 - Mysql instalado;
-- Connector C instalado (comando mysql_config);
+  sudo apt-get install mysql
+- Connector C instalado (comando mysql_config)
+  sudo apt-get install libmysqlclient-dev
 - Mysql com a variavel secure-file-priv desabilitada. Caso nao esteja, criar /etc/my.conf com a seguinte configuracao:
   [mysqld]
   secure-file-priv = ""
