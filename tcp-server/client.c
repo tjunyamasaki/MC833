@@ -21,14 +21,17 @@
 #define BUFFER_SIZE 1024
 
 // get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
-{
-	if (sa->sa_family == AF_INET) {
-		return &(((struct sockaddr_in*)sa)->sin_addr);
-	}
+void *get_in_addr(struct sockaddr *sa);
 
-	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
+// ***************** WRITE AND READ SOCKET *******************//
+
+void write_buffer(int sockfd, char *msg, int msglen);
+
+void read_buffer(int sockfd, char *buffer, int bufferlen);
+
+// *****************
+
+void login_ops(char *user_role, int sockfd, char *buffer);
 
 int main(int argc, char *argv[])
 {
@@ -91,48 +94,67 @@ int main(int argc, char *argv[])
 	int choice = 1;
 
 	while (choice) {
-		printf("Enter with a number:\n");
-		// printf("1. \n");
-		// printf("2. \n");
-		// printf("3. \n");
-		// printf("4. \n");
-		// printf("5. \n");
-		// printf("6. \n");
-		printf("7. \n");
+
+		// printf("\n--------------------------------------- \n");
+    // printf("  Bem vindo ao servidor de Disciplinas! \n");
+    // printf("--------------------------------------- \n\n");
+    //
+    // printf("Operacoes disponiveis:\n");
+    // printf(" 1 -> Login\n");
+    // printf("-1 -> Encerrar sessao\n");
+    //
+    // printf("\nSelecione opcao desejada:\n");
+    // scanf("%d", &menu_code);
+
+		printf("\n--------------------------------------- \n");
+		printf("Choose one of the operations below:\n");
+		printf("--------------------------------------- \n\n");
+
+		printf("1. Login\n");
 		printf("0. Exit\n");
+		printf("\n--------------------------------------- \n\n");
 		scanf("%d", &choice);
-		while ((getchar()) != '\n');
+
 		switch (choice) {
 
-			case 7:
+			case 1:
 
-				printf("Please say something to me:\n");
-
+				printf("\n--> Login operation selected\n");
+				//clearing buffer
+				// scanf(" ");
 				bzero(buffer, BUFFER_SIZE);
+				// printf("oi\n");
 
-				// printf("BUFFER: %s\n", buffer);
+				write_buffer(sockfd, "1", 1);
 
-				fgets(buffer, BUFFER_SIZE-1, stdin);
 
-				int num = write(sockfd, buffer, strlen(buffer));
+				char username[25], password[25];
 
-				if (num < 0) {
-					perror("ERROR: Writing to socket didnt go well..");
-					exit(0);
-				}
+				printf("Enter username: ");
+				scanf("%s", username);
+				// fgets(username, 25, stdin);
+				// bzero(buffer, BUFFER_SIZE);
+				write_buffer(sockfd, username, BUFFER_SIZE);
 
-				bzero(buffer, BUFFER_SIZE);
+				// printf("%s\n", username);
 
-				num = read(sockfd, buffer, BUFFER_SIZE-1);
+				printf("Enter password: ");
+				scanf("%s", password);
+				// bzero(buffer, BUFFER_SIZE);
+				write_buffer(sockfd, password, BUFFER_SIZE);
 
-				if (num < 0) {
-					perror("ERROR: Reading from socket didnt go well..");
-					exit(0);
-				}
+				char user_role[20];
 
-				printf("This is what you asked for.. : %s\n", buffer);
+				//read user_role
+				read_buffer(sockfd, buffer, 20);
 
-				printf("hello\n");
+				strcpy(user_role, buffer);
+
+				printf("user_role: %s\n", user_role);
+
+				login_ops(user_role, sockfd, buffer);
+
+				printf("-- Login ops ended --\n");
 
 				break;
 
@@ -163,4 +185,119 @@ int main(int argc, char *argv[])
 	close(sockfd);
 
 	return 0;
+}
+
+
+
+
+// get sockaddr, IPv4 or IPv6:
+void *get_in_addr(struct sockaddr *sa)
+{
+	if (sa->sa_family == AF_INET) {
+		return &(((struct sockaddr_in*)sa)->sin_addr);
+	}
+
+	return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
+// ***************** WRITE AND READ SOCKET *******************//
+
+void write_buffer(int sockfd, char *msg, int msglen) {
+
+	printf("\n--> Sending this msg: %s\n\n", msg);
+
+	int num = write(sockfd, msg, msglen);
+
+	if (num < 0) {
+		perror("ERROR: Writing to socket didnt go well..");
+		exit(0);
+	}
+}
+
+void read_buffer(int sockfd, char *buffer, int bufferlen){
+
+  printf("\n--> Reading..\n");
+
+	int num = read(sockfd, buffer, bufferlen);
+
+  printf("--> What was read: %s\n\n", buffer);
+
+	if (num < 0) {
+		perror("ERROR: Reading from socket didnt go well..");
+		exit(0);
+	}
+}
+
+
+// ***********************************
+
+void login_ops(char *user_role, int sockfd, char *buffer){
+
+	int login = 1;
+
+	char op_code[2];
+
+	while(login){
+		// Usuario eh Admin do BD.
+		if(strcmp(user_role, "admin") == 0)
+		{
+			printf("\n--------------------------------------- \n");
+			printf("Operacoes disponiveis:\n");
+			printf("--------------------------------------- \n\n");
+			printf(" 1 -> Listar usuarios\n");
+			printf(" 2 -> Criar usuario\n");
+			printf(" 3 -> Deletar usuario\n");
+			printf("-1 -> Logout\n");
+			printf("-2 -> Quit\n");
+			printf("\n--------------------------------------- \n\n");
+
+			printf("\nSelecione opcao desejada:\n");
+			scanf("%s", op_code);
+
+			write_buffer(sockfd, op_code, 2);
+
+			if(strcmp(op_code ,"-1") == 0 || strcmp(op_code ,"-2") == 0) {
+				login = 0;
+			}
+
+			//TODO
+
+			// print respostas
+
+		}
+		// Usuario eh Aluno ou Professor.
+		else
+		{
+			printf("\n--------------------------------------- \n");
+			printf("Operacoes disponiveis:\n");
+			printf("--------------------------------------- \n\n");
+			printf(" 1 -> Listar codigos das disciplinas\n");
+			printf(" 2 -> Buscar ementa\n");
+			printf(" 3 -> Buscar comentario sobre a proxima aula\n");
+			printf(" 4 -> Listar informacoes de uma disciplina\n");
+			printf(" 5 -> Listar informacoes de todas as disciplinas\n");
+			if(strcmp(user_role, "professor") == 0)
+			{
+				printf(" 6 -> Escrever comentario sobre a proxima aula de uma disciplina\n");
+			}
+			printf("-1 -> Logout\n");
+			printf("-2 -> Quit\n");
+			printf("\n--------------------------------------- \n\n");
+
+			printf("\nSelecione opcao desejada:\n");
+			scanf("%s", op_code);
+
+			write_buffer(sockfd, op_code, 2);
+
+			if(strcmp(op_code ,"-1") == 0 || strcmp(op_code ,"-2") == 0) {
+				login = 0;
+			}
+
+			//TODO
+
+			// print respostas
+
+
+		}
+	}
 }
