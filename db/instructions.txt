@@ -1,3 +1,10 @@
+Pre-Requisitos para inicializar o BD:
+- Mysql instalado;
+- Connector C instalado (comando mysql_config);
+- Mysql com a variavel secure-file-priv desabilitada. Caso nao esteja, criar /etc/my.conf com a seguinte configuracao:
+  [mysqld]
+  secure-file-priv = ""
+
 Instalacao do servidor!!
 
 1 - chmod a+x create_db.sh
@@ -9,4 +16,3 @@ Usuarios configurados previamente:
 root/localhost - '??' (Conta gerente local de sua maquina.)
 aluno - 'senha123'
 professor - 'senha123'
-

@@ -7,9 +7,6 @@ CFLAGS = -Wall
 default: $(TARGET)
 all: default
 
-# Change to default mysql install folder!! Check with mysql_config --cflags and --libs to check if necessary
-MYSQL_C_DIR = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))mysql-connector-c/bin/
-
 # Test to automate mysql folder location
 MYSQL_FLAGS = `mysql_config --cflags --libs`
 
