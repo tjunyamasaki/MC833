@@ -1,20 +1,16 @@
-Pre-Requisitos para inicializar o BD:
-- Mysql instalado;
-  sudo apt-get install mysql
-- Connector C instalado (comando mysql_config)
-  sudo apt-get install libmysqlclient-dev
-- Mysql com a variavel secure-file-priv desabilitada. Caso nao esteja, criar /etc/my.conf com a seguinte configuracao:
-  [mysqld]
-  secure-file-priv = ""
+-> Pre-Requisitos para inicializar o BD:
+    - Mysql instalado;
+        sudo apt-get install mysql-server
+    - Connector C instalado (comando mysql_config)
+        sudo apt-get install libmysqlclient-dev
+    - Lembrar senha do usuario root do MySQL.
 
-Instalacao do servidor!!
+-> Instalacao do servidor!!
+    1- rodar mysql -uroot -p < init_db.sql para iniciar BD local do projeto1. Para isso, inserir Senha do mysql admin quando pedido.
+    2- make db_server
+    3- ./db_server
 
-1 - chmod a+x create_db.sh
-2 - rodar ./create_db.sh para iniciar BD local do projeto1. Para isso, inserir User e Senha do mysql admin quando pedido.
-3 - make db_server
-4 - ./db_server
-
-Usuarios configurados previamente:
-root/localhost - '??' (Conta gerente local de sua maquina.)
-aluno - 'senha123'
-professor - 'senha123'
+-> Usuarios configurados previamente:
+    root      - '??' (Conta gerente local de sua maquina.)
+    aluno     - 'senha123'
+    professor - 'senha123'

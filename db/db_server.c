@@ -274,7 +274,7 @@ void login_server(MYSQL *con, int new_fd, char *buffer)
   read_buffer(new_fd, buffer, BUFFER_SIZE-1);
 
 
-  print_wait("Passwaord");
+  print_wait("Password");
   read_buffer(new_fd, buffer, BUFFER_SIZE-1);
   strcpy(password, buffer);
 
