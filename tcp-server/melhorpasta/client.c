@@ -161,6 +161,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 0: //Exit
+				write_buffer(sockfd, "0", 1);
 			break;
 
 			default:
@@ -192,19 +193,28 @@ void professor(int sockfd, char *buf) {
 
 		scanf("%d", &choice);
 
+		char opcode[12];
+		sprintf(opcode, "%d", choice);
+
 		if(choice){
-			//SEND OP CODE
-			write_buffer(sockfd, "1", 1);
 
-			//READ ANSWER
-			read_buffer(sockfd, buf, 12);
+			if(choice < 7 && choice > 0) {
+				//SEND OP CODE
+				write_buffer(sockfd, opcode, 12);
 
-			printf("What server has to say to you: %s\n", buf);
+				//READ ANSWER
+				read_buffer(sockfd, buf, 12);
+
+				printf("What server has to say to you: %s\n", buf);
+			}
+			else {
+				print_1("Invalid Op Code!.\n");
+			}
 
 		}
 		else{
 			num = choice;
-			write_buffer(sockfd, "0", 1);
+			write_buffer(sockfd, opcode, 12);
 		}
 	}
 }
@@ -220,18 +230,27 @@ void aluno(int sockfd, char *buf) {
 
 		scanf("%d", &choice);
 
+		char opcode[12];
+		sprintf(opcode, "%d", choice);
+
 		if(choice){
-			//SEND OP CODE
-			write_buffer(sockfd, "1", 1);
 
-			//READ ANSWER
-			read_buffer(sockfd, buf, 12);
+			if(choice < 6 && choice > 0){
+				//SEND OP CODE
+				write_buffer(sockfd, opcode, 12);
 
-			printf("What server has to say to you: %s\n", buf);
+				//READ ANSWER
+				read_buffer(sockfd, buf, 12);
+
+				printf("What server has to say to you: %s\n", buf);
+			}
+			else{
+				print_1("Invalid Op Code!.\n");
+			}
 		}
 		else{
 			num = choice;
-			write_buffer(sockfd, "0", 1);
+			write_buffer(sockfd, opcode, 1);
 		}
 	}
 }

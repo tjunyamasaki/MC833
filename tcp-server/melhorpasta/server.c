@@ -178,44 +178,55 @@ int main(void)
 			// ------------------------MEU CODIGO ---------------------
 
 			//get login from client (professor ou aluno)
+			print_1("\nWaiting for login type..\n");
 			read_buffer(new_fd, buf, 1);
 
 			int user = atoi(buf);
-			int opcode;
+			int opcode = 1;
 
-			switch (user) {
-				case 1:
-				 	// int num = 1;
-					while(opcode){
-						read_buffer(new_fd, buf, 1);
-						opcode = atoi(buf);
-						professor(new_fd, opcode);
+			while(user){
+				switch (user) {
+					case 1:
+						// int num = 1;
+						while(opcode){
+							print_1("\nWaiting for opcode..\n");
+							read_buffer(new_fd, buf, 12);
+							opcode = atoi(buf);
+							professor(new_fd, opcode);
 
-						//SEND OPCODE CONTENT
+							//SEND OPCODE CONTENT
 
-						//temp
-						write_buffer(new_fd, "Got Op code!", 12);
-					}
-				break;
-				case 2:
-					while(opcode){
-						read_buffer(new_fd, buf, 1);
-						opcode = atoi(buf);
-						aluno(new_fd, opcode);
+							//temp
+							write_buffer(new_fd, "Got Op code!", 12);
+						}
+					break;
+					case 2:
+						while(opcode){
+							print_1("\nWaiting for opcode..\n");
+							read_buffer(new_fd, buf, 12);
+							opcode = atoi(buf);
+							aluno(new_fd, opcode);
 
-						//SEND OPCODE CONTENT
+							//SEND OPCODE CONTENT
 
-						//temp
-						write_buffer(new_fd, "Got Op code!", 12);
-					}
-				break;
-				default:
-					printf("Switch case unexpected case..\n");
+							//temp
+							write_buffer(new_fd, "Got Op code!", 12);
+						}
+					break;
+					default:
+						printf("Switch case unexpected case..\n");
 
+				}
+
+				opcode = 1;
+				print_1("\nWaiting for login type..\n");
+				read_buffer(new_fd, buf, 1);
+				user = atoi(buf);
 			}
 
 
-			print_1("Waiting for new connections..")
+
+			print_1("Waiting for new connections..");
 
 			// ------------------------MEU CODIGO ---------------------
 
