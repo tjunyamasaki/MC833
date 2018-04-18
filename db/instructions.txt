@@ -6,7 +6,7 @@
     - Lembrar senha do usuario root do MySQL.
 
 -> Instalacao do servidor!!
-    1- rodar mysql -uroot -p < init_db.sql para iniciar BD local do projeto1. Para isso, inserir Senha do mysql admin quando pedido.
+    1- rodar 'mysql -uroot -p < init_db.sql' para iniciar BD local do projeto1. Para isso, inserir Senha do mysql admin quando pedido.
     2- make db_server
     3- ./db_server
 
