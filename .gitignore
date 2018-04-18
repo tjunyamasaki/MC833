@@ -35,3 +35,11 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+tcp-server/melhorpasta/client
+
+tcp-server/melhorpasta/server
+
+tcp-server/server
+
+tcp-server/client
