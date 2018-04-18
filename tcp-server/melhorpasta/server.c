@@ -15,11 +15,11 @@
 #include <sys/wait.h>
 #include <signal.h>
 
-#define PORT "3490"  // the port users will be connecting to
+#define PORT "8000"  // the port users will be connecting to
 
 #define BACKLOG 10	 // how many pending connections queue will hold
 
-#define BUFFER_SIZE 1024
+#define MAXDATASIZE 100 // max number of bytes we can get at once
 
 void sigchld_handler(int s)
 {
@@ -33,7 +33,6 @@ void sigchld_handler(int s)
 	errno = saved_errno;
 }
 
-
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -43,6 +42,51 @@ void *get_in_addr(struct sockaddr *sa)
 
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
+
+// ****************** Prints ******************************//
+
+void print_1(char *msg){
+	printf("%s\n", msg);
+}
+
+// ***************************************//
+
+void professor(int sockfd, int opcde){
+
+}
+void aluno(int sockfd, int opcde){
+
+}
+
+
+// ***************** WRITE AND READ SOCKET *******************//
+void write_buffer(int sockfd, char *msg, int msglen) {
+
+	printf("\n--> Sending this msg: %s\n\n", msg);
+
+	int num = write(sockfd, msg, msglen);
+
+	if (num < 0) {
+		perror("ERROR: Writing to socket didnt go well..");
+		exit(0);
+	}
+}
+
+void read_buffer(int sockfd, char *buffer, int bufferlen){
+
+  printf("\n--> Reading..\n");
+
+	int num = read(sockfd, buffer, bufferlen);
+
+  printf("--> What was read: %s\n\n", buffer);
+
+	if (num < 0) {
+		perror("ERROR: Reading from socket didnt go well..");
+		exit(0);
+	}
+}
+
+
 
 int main(void)
 {
@@ -55,9 +99,7 @@ int main(void)
 	char s[INET6_ADDRSTRLEN];
 	int rv;
 
-
-	// Buffer
-	char buffer[BUFFER_SIZE];
+	char buf[MAXDATASIZE];
 
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
@@ -73,7 +115,7 @@ int main(void)
 	for(p = servinfo; p != NULL; p = p->ai_next) {
 		if ((sockfd = socket(p->ai_family, p->ai_socktype,
 				p->ai_protocol)) == -1) {
-			perror("Server: socket");
+			perror("server: socket");
 			continue;
 		}
 
@@ -85,7 +127,7 @@ int main(void)
 
 		if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(sockfd);
-			perror("Server: bind");
+			perror("server: bind");
 			continue;
 		}
 
@@ -95,7 +137,7 @@ int main(void)
 	freeaddrinfo(servinfo); // all done with this structure
 
 	if (p == NULL)  {
-		fprintf(stderr, "Server: failed to bind\n");
+		fprintf(stderr, "server: failed to bind\n");
 		exit(1);
 	}
 
@@ -112,7 +154,7 @@ int main(void)
 		exit(1);
 	}
 
-	printf("Server: Waiting for connections...\n");
+	printf("server: waiting for connections...\n");
 
 	while(1) {  // main accept() loop
 		sin_size = sizeof their_addr;
@@ -125,37 +167,70 @@ int main(void)
 		inet_ntop(their_addr.ss_family,
 			get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s);
-		printf("Got connection from %s\n\n", s);
-
-		//Loop de consultas
-
-		// while(1) {
-
-			printf("Cmon say something to me!! \n");
-			bzero(buffer,BUFFER_SIZE);
-			int num = read(new_fd, buffer, BUFFER_SIZE-1);
-
-			if (num < 0) {
-				perror("ERROR: Reading from socket didnt go well..");
-				exit(0);
-			}
-
-			printf("Here is what you got: %s\n", buffer);
-
-			num = write(new_fd, buffer, 11);
-
-			if (num < 0) {
-				perror("ERROR: Writing to socket didnt go well..");
-				exit(0);
-			}
-
-		// }
-
+		printf("server: got connection from %s\n", s);
 
 		if (!fork()) { // this is the child process
 			close(sockfd); // child doesn't need the listener
-			if (send(new_fd, "Hello, world!", 13, 0) == -1)
-				perror("send");
+
+			// if (send(new_fd, "Hello, world!", 13, 0) == -1)
+			// 	perror("send");
+
+			// ------------------------MEU CODIGO ---------------------
+
+			//get login from client (professor ou aluno)
+			print_1("\nWaiting for login type..\n");
+			read_buffer(new_fd, buf, 1);
+
+			int user = atoi(buf);
+			int opcode = 1;
+
+			while(user){
+				switch (user) {
+					case 1:
+						// int num = 1;
+						while(opcode){
+							print_1("\nWaiting for opcode..\n");
+							read_buffer(new_fd, buf, 12);
+							opcode = atoi(buf);
+							professor(new_fd, opcode);
+
+							//SEND OPCODE CONTENT
+
+							//temp
+							write_buffer(new_fd, "Got Op code!", 12);
+						}
+					break;
+					case 2:
+						while(opcode){
+							print_1("\nWaiting for opcode..\n");
+							read_buffer(new_fd, buf, 12);
+							opcode = atoi(buf);
+							aluno(new_fd, opcode);
+
+							//SEND OPCODE CONTENT
+
+							//temp
+							write_buffer(new_fd, "Got Op code!", 12);
+						}
+					break;
+					default:
+						printf("Switch case unexpected case..\n");
+
+				}
+
+				opcode = 1;
+				print_1("\nWaiting for login type..\n");
+				read_buffer(new_fd, buf, 1);
+				user = atoi(buf);
+			}
+
+
+
+			print_1("Waiting for new connections..");
+
+			// ------------------------MEU CODIGO ---------------------
+
+
 			close(new_fd);
 			exit(0);
 		}

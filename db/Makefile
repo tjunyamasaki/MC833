@@ -12,5 +12,4 @@ MYSQL_FLAGS = `mysql_config --cflags --libs`
 
 # Basic compilation
 % : %.c
-	export PATH=$(MYSQL_C_DIR):$(PATH)
 	$(CC) $(CFLAGS) -o $@ $< $(MYSQL_FLAGS)

@@ -73,12 +73,12 @@ void start_db(MYSQL *con)
   strcpy(querry_command, "CREATE TABLE USUARIOS(USERNAME VARCHAR(45) NOT NULL, TIPO VARCHAR(45) NULL, PRIMARY KEY (USERNAME))");
   execute_querry(con, querry_command);
 
-  strcpy(querry_command, "LOAD DATA INFILE 'DATA_DIR/data/DISCIPLINAS.csv' IGNORE INTO TABLE DISCIPLINAS CHARACTER SET utf8 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES (CODIGO_DISCIPLINA,TITULO,EMENTA,SALA,HORARIO,COMENTARIO);");
-  execute_querry(con, querry_command);
+  // strcpy(querry_command, "LOAD DATA INFILE 'DATA_DIR/data/DISCIPLINAS.csv' IGNORE INTO TABLE DISCIPLINAS CHARACTER SET utf8 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES (CODIGO_DISCIPLINA,TITULO,EMENTA,SALA,HORARIO,COMENTARIO);");
+  // execute_querry(con, querry_command);
 
   strcpy(querry_command, "INSERT INTO USUARIOS (USERNAME,TIPO) VALUES('root','admin');");
   execute_querry(con, querry_command);
-  
+
   // Creating dummy professor for test
   strcpy(querry_command, "INSERT INTO USUARIOS (USERNAME,TIPO) VALUES('professor','professor');");
   execute_querry(con, querry_command);
