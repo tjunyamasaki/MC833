@@ -245,7 +245,8 @@ void print_tela_inicial(){
 	printf("Choose one of the operations below:\n");
 	printf("--------------------------------------- \n\n");
 
-	printf("1. Login\n");
+	printf("1. Login Professor\n");
+	printf("2. Login Aluno\n");
 	printf("0. Exit\n");
 	printf("\n--------------------------------------- \n\n");
 }
