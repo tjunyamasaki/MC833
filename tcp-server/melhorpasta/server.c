@@ -48,10 +48,20 @@ void execute_querry(MYSQL *con, char* querry_command);
 void loginMysql(char *username, char *password, MYSQL *con);
 void initError(MYSQL *con);
 
+// Operacoes dos alunos/professores
+void list_codes(MYSQL *con);
+void get_ementa(MYSQL *con);
+void get_comment(MYSQL *con);
+void get_full_info(MYSQL *con);
+void get_all_info(MYSQL *con);
+
+// Operacoes dos professores
+void write_comment(MYSQL *con);
+
 // ******************* Project related functions ******************** //
 
-void professor(int sockfd, int opcde);
-void aluno(int sockfd, int opcde);
+void professor(MYSQL *con, int sockfd, int opcde);
+void aluno(MYSQL *con, int sockfd, int opcde);
 
 
 int main(void)
@@ -159,7 +169,7 @@ int main(void)
 				user = atoi(buf);
 				opcode = 1;
 
-				switch (user) {
+				switch(user){
 					case 1:
 						printa("PROFESSOR Logged In!");
 						loginMysql("professor", "senha123", con);
@@ -169,16 +179,13 @@ int main(void)
 							read_buffer(new_fd, buf, 12);
 							opcode = atoi(buf);
 
-							//IMPLEMENTAR PROFESSOR
-							//UMA FUNCAO PRA CADA OPCODE
-							//SEND OPCODE CONTENT
-							professor(new_fd, opcode);
+							professor(con, new_fd, opcode);
 
 							//temp APAGAR feed back do op code
 							write_buffer(new_fd, "Got Op code!", 12);
 							//temp APAGAR
 						}
-					break;
+						break;
 					case 2:
 						printa("ALUNO Logged In!");
 						loginMysql("aluno", "senha123", con);
@@ -187,19 +194,16 @@ int main(void)
 							read_buffer(new_fd, buf, 12);
 							opcode = atoi(buf);
 
-							//IMPLEMENTAR PROFESSOR
-							//UMA FUNCAO PRA CADA OPCODE
-							//SEND OPCODE CONTENT
-							aluno(new_fd, opcode);
+							aluno(con, new_fd, opcode);
 
 							//temp APAGAR feed back do op code
 							write_buffer(new_fd, "Got Op code!", 12);
 							//temp APAGAR
 						}
-					break;
+						break;
 					case 0:
 						printa("Closing Connection..\n");
-					break;
+						break;
 					default:
 						printa("Switch case unexpected case..");
 
@@ -246,14 +250,14 @@ void sigchld_handler(int s)
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
-	if (sa->sa_family == AF_INET) {
+	if (sa->sa_family == AF_INET){
 		return &(((struct sockaddr_in*)sa)->sin_addr);
 	}
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
 // ***************** WRITE AND READ SOCKET *******************//
-void write_buffer(int sockfd, char *msg, int msglen) {
+void write_buffer(int sockfd, char *msg, int msglen){
 
 	printf("---> Sending this msg: %s\n\n", msg);
 
@@ -265,7 +269,7 @@ void write_buffer(int sockfd, char *msg, int msglen) {
 	}
 }
 
-void read_buffer(int sockfd, char *buffer, int bufferlen) {
+void read_buffer(int sockfd, char *buffer, int bufferlen){
 
   printf("---> Reading..\n");
 
@@ -281,7 +285,7 @@ void read_buffer(int sockfd, char *buffer, int bufferlen) {
 
 // ****************** [MYSQL] ************************** //
 
-void initError(MYSQL *con) {
+void initError(MYSQL *con){
 	if (con == NULL)
 	{
 		fprintf(stderr, "%s\n", mysql_error(con));
@@ -300,7 +304,7 @@ void finish_with_error(MYSQL *con)
 // Executa querry
 void execute_querry(MYSQL *con, char* querry_command)
 {
-  if (mysql_query(con, querry_command)) {
+  if (mysql_query(con, querry_command)){
       finish_with_error(con);
   }
 }
@@ -314,12 +318,158 @@ void loginMysql(char *username, char *password, MYSQL *con){
 }
 
 
-// ******************* Project related functions ******************** //
+// *********************** Operacoes ALUNO/PROFESSOR *********************** //
 
-void professor(int sockfd, int opcde) {
+// Listar todos os códigos de disciplinas com seus respectivos títulos;
+void list_codes(MYSQL *con)
+{
+  char querry_command[1000];
 
+  strcpy(querry_command, "SELECT CODIGO_DISCIPLINA AS CODIGO, TITULO FROM DISCIPLINAS;");
+  execute_querry(con, querry_command);
+
+	// Alterar para send_results
+  display_results(con);
 }
 
-void aluno(int sockfd, int opcde) {
+// Dado o código de uma disciplina, retornar a ementa;
+void get_ementa(MYSQL *con)
+{
+  char search_code[6], querry_command[1000];
 
+  // Adicionar receive_parameter
+  // scanf("%s", search_code);
+
+  strcpy(querry_command, "SELECT EMENTA FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
+  strcat(querry_command, search_code);
+  strcat(querry_command, "';");
+  execute_querry(con, querry_command);
+
+  // Alterar para send_results
+	display_results(con);
+}
+
+// Dado o código de uma disciplina, retornar o texto de comentário sobre a próxima aula.
+void get_comment(MYSQL *con)
+{
+  char search_code[6], querry_command[1000];
+
+	// Adicionar receive_parameter
+  // scanf("%s", search_code);
+
+  strcpy(querry_command, "SELECT COMENTARIO FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
+  strcat(querry_command, search_code);
+  strcat(querry_command, "';");
+  execute_querry(con, querry_command);
+
+	// Alterar para send_results
+  display_results(con);
+}
+
+// Dado o código de uma disciplina, retornar todas as informações desta disciplina;
+void get_full_info(MYSQL *con)
+{
+  char search_code[6], querry_command[1000];
+
+	// Adicionar receive_parameter
+  //scanf("%s", search_code);
+
+  strcpy(querry_command, "SELECT * FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
+  strcat(querry_command, search_code);
+  strcat(querry_command, "';");
+  execute_querry(con, querry_command);
+
+	// Alterar para send_results
+  display_results(con);
+}
+
+// Listar todas as informações de todas as disciplinas
+void get_all_info(MYSQL *con)
+{
+  char querry_command[1000];
+
+  strcpy(querry_command, "SELECT * FROM DISCIPLINAS;");
+  execute_querry(con, querry_command);
+
+	// Alterar para send_results
+  display_results(con);
+}
+
+// *********************** Operacoes do PROFESSOR *********************** //
+
+// Escrever um texto de comentário sobre a próxima aula de uma disciplina (apenas usuário professor)
+void write_comment(MYSQL *con)
+{
+  char search_code[6], comment[500], querry_command[1000];
+
+  // Adicionar receive_parameter
+  //scanf("%s", search_code);
+
+  // Adicionar receive_parameter
+	// Adicionar print_do_receive
+  //fgets(comment, sizeof(comment), stdin);
+
+  strcpy(querry_command, "UPDATE DISCIPLINAS SET COMENTARIO = '");
+  strcat(querry_command, comment);
+  strcat(querry_command, "' WHERE CODIGO_DISCIPLINA = '");
+  strcat(querry_command, search_code);
+  strcat(querry_command, "';");
+
+  execute_querry(con, querry_command);
+}
+
+// ******************* Project related functions ******************** //
+
+void professor(MYSQL *con, int sockfd, int opcode) {
+	switch (op_code)
+	{
+		case 1:
+			list_codes(con);
+			break;
+		case 2:
+			get_ementa(con);
+			break;
+		case 3:
+			get_comment(con);
+			break;
+		case 4:
+			get_full_info(con);
+			break;
+		case 5:
+			get_all_info(con);
+			break;
+		case 6:
+			write_comment(con);
+			break;
+		default:
+			printf("\nOperacao invalida. Selecione outra.\n");
+			break;
+	}
+}
+
+void aluno(MYSQL *con, int sockfd, int opcode) {
+	switch (opcode)
+	{
+		case 0:
+			printf("\nFinalizando sessao!\n");
+			break;
+		case 1:
+			list_codes(con);
+			break;
+		case 2:
+			get_ementa(con);
+			break;
+		case 3:
+			get_comment(con);
+			break;
+		case 4:
+			get_full_info(con);
+			break;
+		case 5:
+			get_all_info(con);
+			break;
+		default:
+			printf("\nOperacao invalida. Selecione outra.\n");
+			break;
+	}
 }

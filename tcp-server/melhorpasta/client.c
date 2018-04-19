@@ -22,6 +22,21 @@
 #define MAXDATASIZE 100 // max number of bytes we can get at once
 
 
+// ******************* Project related functions ******************** //
+
+void professor(int sockfd, char *buf);
+void aluno(int sockfd, char *buf);
+
+// Operacoes dos alunos/professores
+void list_codes();
+void get_ementa();
+void get_comment();
+void get_full_info();
+void get_all_info();
+
+// Operacoes dos professores
+void write_comment();
+
 // ****************** Prints ***************************** //
 
 void printa(char *msg);
@@ -35,12 +50,6 @@ void print_ops_aluno();
 void *get_in_addr(struct sockaddr *sa);
 void write_buffer(int sockfd, char *msg, int msglen);
 void read_buffer(int sockfd, char *buffer, int bufferlen);
-
-
-// ******************* Project related functions ******************** //
-
-void professor(int sockfd, char *buf);
-void aluno(int sockfd, char *buf);
 
 
 int main(int argc, char *argv[])
@@ -129,7 +138,7 @@ int main(int argc, char *argv[])
 			break;
 
 			default:
-				printf("Opção Inválida.\n");
+				printf("OpÃ§Ã£o InvÃ¡lida.\n");
 
 		}
 	}
@@ -164,15 +173,27 @@ void professor(int sockfd, char *buf) {
 				//SEND OP CODE
 				write_buffer(sockfd, opcode, 12);
 
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				switch (choice)
+				{
+					case 1:
+						list_codes();
+						break;
+					case 2:
+						get_ementa();
+						break;
+					case 3:
+						get_comment();
+						break;
+					case 4:
+						get_full_info();
+						break;
+					case 5:
+						get_all_info();
+						break;
+					case 6:
+						write_comment();
+						break;
+				}
 
 				//temp APAGAR aviso do server
 				read_buffer(sockfd, buf, 12);
@@ -211,16 +232,24 @@ void aluno(int sockfd, char *buf) {
 				//SEND OP CODE
 				write_buffer(sockfd, opcode, 12);
 
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
-
+				switch (choice)
+				{
+					case 1:
+						list_codes();
+						break;
+					case 2:
+						get_ementa();
+						break;
+					case 3:
+						get_comment();
+						break;
+					case 4:
+						get_full_info();
+						break;
+					case 5:
+						get_all_info();
+						break;
+				}
 				//temp APAGAR aviso do server
 				read_buffer(sockfd, buf, 12);
 				printf("What server has to say to you: %s\n", buf);
@@ -277,6 +306,111 @@ void read_buffer(int sockfd, char *buffer, int bufferlen){
 	}
 }
 
+// *********************** Operacoes ALUNO/PROFESSOR *********************** //
+
+// Listar todos os códigos de disciplinas com seus respectivos títulos;
+void list_codes()
+{
+  printf("\n---------------------------------------\n");
+  printf(" 1 -> Listar codigos das disciplinas\n");
+  printf("---------------------------------------\n\n");
+
+  // Adicionar read_result;
+
+	printf("\n---------------------------------------\n\n");
+}
+
+// Dado o código de uma disciplina, retornar a ementa;
+void get_ementa()
+{
+  char search_code[6];
+
+  printf("\n---------------------------------------\n");
+  printf(" 2 -> Buscar ementa\n");
+  printf("---------------------------------------\n\n");
+
+  printf("Digite o codigo da disciplina desejada:\n");
+  scanf("%s", search_code);
+
+	// Adicionar send_parameter;
+	// Adicionar read_result;
+
+	printf("\n---------------------------------------\n\n");
+}
+
+// Dado o código de uma disciplina, retornar o texto de comentário sobre a próxima aula.
+void get_comment()
+{
+  char search_code[6];
+
+  printf("\n---------------------------------------\n");
+  printf(" 3 -> Buscar comentario sobre a proxima aula\n");
+  printf("---------------------------------------\n\n");
+
+  printf("Digite o codigo da disciplina desejada:\n");
+  scanf("%s", search_code);
+
+	// Adicionar send_parameter;
+  // Adicionar read_result;
+
+	printf("\n---------------------------------------\n\n");
+}
+
+// Dado o código de uma disciplina, retornar todas as informações desta disciplina;
+void get_full_info()
+{
+  char search_code[6];
+
+  printf("\n---------------------------------------\n");
+  printf(" 4 -> Listar informacoes de uma disciplina\n");
+  printf("---------------------------------------\n\n");
+
+  printf("Digite o codigo da disciplina desejada:\n");
+  scanf("%s", search_code);
+
+	// Adicionar send_parameter;
+  // Adicionar read_result;
+
+	printf("\n---------------------------------------\n\n");
+}
+
+// Listar todas as informações de todas as disciplinas
+void get_all_info()
+{
+  printf("\n---------------------------------------\n");
+  printf(" 5 -> Listar informacoes de todas as disciplinas\n");
+  printf("---------------------------------------\n\n");
+
+	// Adicionar read_result;
+
+	printf("\n---------------------------------------\n\n");
+}
+
+// *********************** Operacoes do PROFESSOR *********************** //
+
+// Escrever um texto de comentário sobre a próxima aula de uma disciplina (apenas usuário professor)
+void write_comment()
+{
+  char search_code[6], comment[500];
+
+  printf("\n---------------------------------------\n");
+  printf(" 6 -> Escrever comentario sobre a proxima aula de uma disciplina\n");
+  printf("---------------------------------------\n\n");
+
+  printf("Digite o codigo da disciplina desejada:\n");
+  scanf("%s", search_code);
+
+	// Adicionar send_parameter;
+
+  printf("\nDigite o comentario que deseja inserir em %s:\n", search_code);
+  fgets(comment, sizeof(comment), stdin);
+
+	// Adicionar send_parameter;
+
+	printf("\nComentario adicionado!!\n");
+
+  printf("\n---------------------------------------\n\n");
+}
 
 // ***************************** Prints ***************************** //
 
@@ -325,3 +459,4 @@ void print_ops_aluno(){
 	printf("\n--------------------------------------- \n\n");
 
 }
+
