@@ -1,5 +1,10 @@
 /*
-** client.c -- a stream socket client demo
+**	Header - Basic server in C with MYSQL Databse integration
+**
+**
+**
+**
+**
 */
 
 #include <stdio.h>
@@ -11,72 +16,36 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-
 #include <arpa/inet.h>
 
 #define PORT "8000" // the port client will be connecting to
-
 #define MAXDATASIZE 100 // max number of bytes we can get at once
 
-// get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
-{
-	if (sa->sa_family == AF_INET) {
-		return &(((struct sockaddr_in*)sa)->sin_addr);
-	}
 
-	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
+// ****************** Prints ***************************** //
 
-
-
-// ***************** WRITE AND READ SOCKET *******************//
-void write_buffer(int sockfd, char *msg, int msglen) {
-
-	printf("\n--> Sending this msg: %s\n\n", msg);
-
-	int num = write(sockfd, msg, msglen);
-
-	if (num < 0) {
-		perror("ERROR: Writing to socket didnt go well..");
-		exit(0);
-	}
-}
-
-void read_buffer(int sockfd, char *buffer, int bufferlen){
-
-  printf("\n--> Reading..\n");
-
-	int num = read(sockfd, buffer, bufferlen);
-
-  printf("--> What was read: %s\n\n", buffer);
-
-	if (num < 0) {
-		perror("ERROR: Reading from socket didnt go well..");
-		exit(0);
-	}
-}
-
-/*************** Prints **********/
-
-void print_1(char *msg);
+void printa(char *msg);
 void print_tela_inicial();
 void print_ops_professor();
 void print_ops_aluno();
 
+// ************** [Server] - Basic functions ********************** //
 
-/************************/
+// get sockaddr, IPv4 or IPv6:
+void *get_in_addr(struct sockaddr *sa);
+void write_buffer(int sockfd, char *msg, int msglen);
+void read_buffer(int sockfd, char *buffer, int bufferlen);
+
+
+// ******************* Project related functions ******************** //
+
 void professor(int sockfd, char *buf);
-
 void aluno(int sockfd, char *buf);
-
-
-
 
 
 int main(int argc, char *argv[])
 {
-	int sockfd, numbytes;
+	int sockfd;
 	char buf[MAXDATASIZE];
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
@@ -124,16 +93,10 @@ int main(int argc, char *argv[])
 
 	freeaddrinfo(servinfo); // all done with this structure
 
-	// if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	//     perror("recv");
-	//     exit(1);
-	// }
-	//
-	// buf[numbytes] = '\0';
-	//
-	// printf("client: received '%s'\n",buf);
+	// -------------------------------------------------------------- //
+	// ------------------------ MAIN CLIENT CODE -------------------- //
+	// -------------------------------------------------------------- //
 
-	// ------------------------MEU CODIGO ---------------------
 
 	int login = 1;
 
@@ -154,6 +117,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 2: //Aluno
+
 				//send aluno code
 				write_buffer(sockfd, "2", 1);
 				aluno(sockfd, buf);
@@ -170,17 +134,15 @@ int main(int argc, char *argv[])
 		}
 	}
 
-
-
-	// ------------------------MEU CODIGO ---------------------
-
+	// -------------------------------------------------------------- //
+	// ------------------------ MAIN CLIENT CODE -------------------- //
+	// -------------------------------------------------------------- //
 
 	close(sockfd);
-
 	return 0;
 }
 
-
+// ******************* Project related functions ******************** //
 
 void professor(int sockfd, char *buf) {
 
@@ -202,13 +164,23 @@ void professor(int sockfd, char *buf) {
 				//SEND OP CODE
 				write_buffer(sockfd, opcode, 12);
 
-				//READ ANSWER
-				read_buffer(sockfd, buf, 12);
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
 
+				//temp APAGAR aviso do server
+				read_buffer(sockfd, buf, 12);
 				printf("What server has to say to you: %s\n", buf);
+				//temp APAGAR
 			}
 			else {
-				print_1("Invalid Op Code!.\n");
+				printa("Invalid Op Code!.\n");
 			}
 
 		}
@@ -239,13 +211,23 @@ void aluno(int sockfd, char *buf) {
 				//SEND OP CODE
 				write_buffer(sockfd, opcode, 12);
 
-				//READ ANSWER
-				read_buffer(sockfd, buf, 12);
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
+				//READ ANSWER IMPLEMENTAR AQUI CADA OPCODE
 
+				//temp APAGAR aviso do server
+				read_buffer(sockfd, buf, 12);
 				printf("What server has to say to you: %s\n", buf);
+				//temp APAGAR
 			}
 			else{
-				print_1("Invalid Op Code!.\n");
+				printa("Invalid Op Code!.\n");
 			}
 		}
 		else{
@@ -255,7 +237,50 @@ void aluno(int sockfd, char *buf) {
 	}
 }
 
-void print_1(char *msg){
+// ************** [Server] - Basic functions ********************** //
+
+// get sockaddr, IPv4 or IPv6:
+void *get_in_addr(struct sockaddr *sa)
+{
+	if (sa->sa_family == AF_INET) {
+		return &(((struct sockaddr_in*)sa)->sin_addr);
+	}
+
+	return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
+// ***************** WRITE AND READ SOCKET ***************** //
+
+void write_buffer(int sockfd, char *msg, int msglen) {
+
+	printf("---> Sending this msg: %s\n\n", msg);
+
+	int num = write(sockfd, msg, msglen);
+
+	if (num < 0) {
+		perror("ERROR: Writing to socket didnt go well..");
+		exit(0);
+	}
+}
+
+void read_buffer(int sockfd, char *buffer, int bufferlen){
+
+	printf("---> Reading..\n");
+
+	int num = read(sockfd, buffer, bufferlen);
+
+	printf("---> What was read: %s\n\n", buffer);
+
+	if (num < 0) {
+		perror("ERROR: Reading from socket didnt go well..");
+		exit(0);
+	}
+}
+
+
+// ***************************** Prints ***************************** //
+
+void printa(char *msg){
 	printf("%s\n", msg);
 }
 
