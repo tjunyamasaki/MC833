@@ -38,8 +38,8 @@ void printa(char *msg);
 void sigchld_handler(int s);
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa);
-void write_buffer(int sockfd, char *msg, int *msglen);
-int read_buffer(int sockfd, char *msg, int *msglen);
+void write_buffer(int sockfd, char *msg);
+void read_buffer(int sockfd, char *msg, int len);
 
 // ****************** [MYSQL] ************************** //
 
@@ -156,7 +156,7 @@ int main(void)
 			// ------------------------ MAIN SERVER CODE -------------------- //
 			// -------------------------------------------------------------- //
 
-			int user = 1, size;
+			int user = 1;
 			int opcode;
 
 			while(user){
@@ -166,7 +166,7 @@ int main(void)
 
 				//get login from client (professor ou aluno)
 				printa("\nWaiting for login type..\n");
-				read_buffer(new_fd, buf, &size);
+				read_buffer(new_fd, buf, 1);
 				user = atoi(buf);
 				opcode = 1;
 
@@ -177,7 +177,7 @@ int main(void)
 						// int num = 1;
 						while(opcode){
 							printa("\nWaiting for opcode..\n");
-							read_buffer(new_fd, buf, &size);
+							read_buffer(new_fd, buf, 1);
 							opcode = atoi(buf);
 
 							professor(con, new_fd, opcode);
@@ -188,7 +188,7 @@ int main(void)
 						loginMysql("aluno", "senha123", con);
 						while(opcode){
 							printa("\nWaiting for opcode..\n");
-							read_buffer(new_fd, buf, &size);
+							read_buffer(new_fd, buf, 1);
 							opcode = atoi(buf);
 
 							aluno(con, new_fd, opcode);
@@ -251,74 +251,54 @@ void *get_in_addr(struct sockaddr *sa)
 
 // ***************** WRITE AND READ SOCKET ******************* //
 
-void write_buffer(int sockfd, char *msg, int *msglen) {
+void write_buffer(int sockfd, char *msg) {
 
-	printf("---> Sending this msg: %s\n\n", msg);
+	// printf("---> Sending this msg: %s\n\n", msg);
+	//
+	// int num = write(sockfd, msg, msglen);
+	//
+	// if (num < 0) {
+	// 	perror("ERROR: Writing to socket didnt go well..");
+	// 	exit(0);
+	// }
 
-	int total = 0;        // how many bytes we’ve sent
-  int bytesleft = *msglen; // how many we have left to send
-  int n;
 
-	n = send(sockfd, msglen, sizeof(int), 0); // sending header with size of the msg!
 
-	if(n == -1) {
-		perror("ERROR: Sending to socket didnt go well..");
-		//return -1;
+	int tam = strlen(msg);
+	char tamemstring[10];
+
+	printf("tamanho da frase: %d\n", tam);
+
+	sprintf(tamemstring, "%d", tam);
+
+	int num = send(sockfd, tamemstring, sizeof(int), 0);
+	if (num < 0) {
+		perror("ERROR: Writing to socket didnt go well..");
+		exit(0);
 	}
-	else {
-		while(total < *msglen) {
-				n = send(sockfd, msg+total, bytesleft, 0);
-				if (n == -1) { break; }
-				total += n;
-				bytesleft -= n;
+
+	for (int i = 0; i < tam; i = i+MAXDATASIZE) {
+		printf("sending: %s\n", msg+i);
+		num = send(sockfd, msg+i, MAXDATASIZE, 0);
+		if (num < 0) {
+			perror("ERROR: Writing to socket didnt go well..");
+			exit(0);
 		}
-		*msglen = total; // return number actually sent here
 	}
-	if(n == -1){
-			perror("ERROR: Sending to socket didnt go well..");
-	}
-
-	//return n == -1 ? -1 : 0; // return -1 on failure, 0 on success
-
-
-	//int num = write(sockfd, msg, msglen);
-
-	//if (num < 0) {
-
-	//	exit(0);
-	//}
 }
 
-int read_buffer(int sockfd, char *msg, int *msglen) {
-
-	int total = 0;        			// how many bytes we’ve received
-	int n;
+void read_buffer(int sockfd, char *buffer, int bufferlen) {
 
   printf("---> Reading..\n");
 
-	//int num = read(sockfd, buffer, bufferlen);
-	n = recv(sockfd, msg, sizeof(int), 0);
-	if(n == -1) {
-		return -1;
-	}
-	else {
-		int *msglen =	atoi(buffer);		// header size
-		int bytesleft = header;
-		while(total < *msglen) {
-				n = recv(sockfd, msg+total, bytesleft, 0);
-				if (n == -1) { break; }
-				total += n;
-				bytesleft -= n;
-		}
-		*msglen = total; // return number actually sent here
-	}
+	int num = recv(sockfd, buffer, bufferlen, 0);
 
-  printf("---> What was read: %s\n\n", msg);
+  printf("---> What was read: %s\n\n", buffer);
 
-	//if (num < 0) {
-		//perror("ERROR: Reading from socket didnt go well..");
-		//exit(0);
-	//}
+	if (num < 0) {
+		perror("ERROR: Reading from socket didnt go well..");
+		exit(0);
+	}
 }
 
 // ****************** [MYSQL] ************************** //
@@ -368,6 +348,8 @@ void display_results(MYSQL *con, int sockfd)
   int num_rows = mysql_num_rows(result);
 	char table[2500];
 
+	strcpy(table, "");
+
 	MYSQL_ROW row;
 	MYSQL_FIELD *field;
 
@@ -392,11 +374,11 @@ void display_results(MYSQL *con, int sockfd)
 	}
 	strcat(table,"---------------------------------------\n\n");
 
-	//printf("%s", table);
-	write_buffer(sockfd, table, strlen(table));
+	printf("\n\n\n%s\n\n\n", table);
 
+
+	write_buffer(sockfd, table);
 	mysql_free_result(result);
-	}
 
 }
 
@@ -421,7 +403,7 @@ void get_ementa(MYSQL *con, int sockfd)
   char search_code[6], querry_command[1000];
 
   // Adicionar receive_parameter
-	read_buffer(sockfd, search_code, &size);
+	recv(sockfd, search_code, 6, 0);
   // scanf("%s", search_code);
 
   strcpy(querry_command, "SELECT EMENTA FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
@@ -440,7 +422,7 @@ void get_comment(MYSQL *con, int sockfd)
   char search_code[6], querry_command[1000];
 
 	// Adicionar receive_parameter
-	read_buffer(sockfd, search_code, &size);
+	recv(sockfd, search_code, 6, 0);
   // scanf("%s", search_code);
 
   strcpy(querry_command, "SELECT COMENTARIO FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
@@ -459,7 +441,7 @@ void get_full_info(MYSQL *con, int sockfd)
   char search_code[6], querry_command[1000];
 
 	// Adicionar receive_parameter
-	read_buffer(sockfd, search_code, &size);
+	recv(sockfd, search_code, 6, 0);
   //scanf("%s", search_code);
 
   strcpy(querry_command, "SELECT * FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
@@ -492,12 +474,12 @@ void write_comment(MYSQL *con, int sockfd)
   char search_code[6], comment[500], querry_command[1000];
 
   // Adicionar receive_parameter
-	read_buffer(sockfd, search_code, &size);
+	recv(sockfd, search_code, 6, 0);
   //scanf("%s", search_code);
 
   // Adicionar receive_parameter
 	// Adicionar print_do_receive
-	read_buffer(sockfd, comment, &size);
+	recv(sockfd, comment, 500, 0);
   //fgets(comment, sizeof(comment), stdin);
 
   strcpy(querry_command, "UPDATE DISCIPLINAS SET COMENTARIO = '");
@@ -512,8 +494,11 @@ void write_comment(MYSQL *con, int sockfd)
 // ******************* Project related functions ******************** //
 
 void professor(MYSQL *con, int sockfd, int opcode) {
-	switch (op_code)
+	switch (opcode)
 	{
+		case 0:
+			printf("\nFinalizando sessao!\n");
+			break;
 		case 1:
 			list_codes(con, sockfd);
 			break;

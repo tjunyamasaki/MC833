@@ -44,12 +44,14 @@ void print_tela_inicial();
 void print_ops_professor();
 void print_ops_aluno();
 
+void print_supremo(int sockfd);
+
 // ************** [Server] - Basic functions ********************** //
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa);
-void write_buffer(int sockfd, char *msg, int *msglen);
-int read_buffer(int sockfd, char *msg, int *msglen);
+void write_buffer(int sockfd, char *msg, int msglen);
+void read_buffer(int sockfd, char *msg, int msglen);
 
 
 int main(int argc, char *argv[])
@@ -107,7 +109,7 @@ int main(int argc, char *argv[])
 	// -------------------------------------------------------------- //
 
 
-	int login = 1, size;
+	int login = 1;
 
 	while(login) {
 
@@ -120,7 +122,7 @@ int main(int argc, char *argv[])
 			case 1: //Professor
 
 				//send professor code
-				write_buffer(sockfd, "1", &size);
+				write_buffer(sockfd, "1", 1);
 				professor(sockfd, buf);
 				printf("Professor Logging out..\n");
 			break;
@@ -128,13 +130,13 @@ int main(int argc, char *argv[])
 			case 2: //Aluno
 
 				//send aluno code
-				write_buffer(sockfd, "2", &size);
+				write_buffer(sockfd, "2", 1);
 				aluno(sockfd, buf);
 				printf("Aluno Logging out..\n");
 			break;
 
 			case 0: //Exit
-				write_buffer(sockfd, "0", &size);
+				write_buffer(sockfd, "0", 1);
 			break;
 
 			default:
@@ -160,7 +162,7 @@ void professor(int sockfd, char *buf) {
 	while(num){
 		print_ops_professor();
 
-		int choice, size;
+		int choice;
 
 		scanf("%d", &choice);
 
@@ -171,7 +173,7 @@ void professor(int sockfd, char *buf) {
 
 			if(choice < 7 && choice > 0) {
 				//SEND OP CODE
-				write_buffer(sockfd, opcode, &size);
+				write_buffer(sockfd, opcode, 1);
 
 				switch (choice)
 				{
@@ -195,10 +197,10 @@ void professor(int sockfd, char *buf) {
 						break;
 				}
 
-				//temp APAGAR aviso do server
-				read_buffer(sockfd, buf, &size);
-				printf("What server has to say to you: %s\n", buf);
-				//temp APAGAR
+				// //temp APAGAR aviso do server
+				// read_buffer(sockfd, buf, 1);
+				// printf("What server has to say to you: %s\n", buf);
+				// //temp APAGAR
 			}
 			else {
 				printa("Invalid Op Code!.\n");
@@ -207,7 +209,7 @@ void professor(int sockfd, char *buf) {
 		}
 		else{
 			num = choice;
-			write_buffer(sockfd, opcode, &size);
+			write_buffer(sockfd, opcode, 1);
 		}
 	}
 }
@@ -219,7 +221,7 @@ void aluno(int sockfd, char *buf) {
 	while(num){
 		print_ops_aluno();
 
-		int choice, size;
+		int choice;
 
 		scanf("%d", &choice);
 
@@ -230,7 +232,7 @@ void aluno(int sockfd, char *buf) {
 
 			if(choice < 6 && choice > 0){
 				//SEND OP CODE
-				write_buffer(sockfd, opcode, &size);
+				write_buffer(sockfd, opcode, 1);
 
 				switch (choice)
 				{
@@ -250,10 +252,10 @@ void aluno(int sockfd, char *buf) {
 						get_all_info(sockfd);
 						break;
 				}
-				//temp APAGAR aviso do server
-				read_buffer(sockfd, buf, &size);
-				printf("What server has to say to you: %s\n", buf);
-				//temp APAGAR
+				// //temp APAGAR aviso do server
+				// read_buffer(sockfd, buf, 1);
+				// printf("What server has to say to you: %s\n", buf);
+				// //temp APAGAR
 			}
 			else{
 				printa("Invalid Op Code!.\n");
@@ -261,7 +263,7 @@ void aluno(int sockfd, char *buf) {
 		}
 		else{
 			num = choice;
-			write_buffer(sockfd, opcode, &size);
+			write_buffer(sockfd, opcode, 1);
 		}
 	}
 }
@@ -280,70 +282,30 @@ void *get_in_addr(struct sockaddr *sa)
 
 // ***************** WRITE AND READ SOCKET ***************** //
 
-void write_buffer(int sockfd, char *msg, int *msglen) {
+void write_buffer(int sockfd, char *msg, int msglen) {
 
 	printf("---> Sending this msg: %s\n\n", msg);
 
-	int total = 0;        // how many bytes we’ve sent
-  int bytesleft = *msglen; // how many we have left to send
-  int n;
+	int num = send(sockfd, msg, msglen, 0);
 
-	n = send(sockfd, msglen, sizeof(int), 0); // sending header with size of the msg!
-
-	if(n == -1) {
-		//return -1;
+	if (num < 0) {
+		perror("ERROR: Writing to socket didnt go well..");
+		exit(0);
 	}
-	else {
-		while(total < *msglen) {
-				n = send(sockfd, msg+total, bytesleft, 0);
-				if (n == -1) { break; }
-				total += n;
-				bytesleft -= n;
-		}
-		*msglen = total; // return number actually sent here
-	}
-
-	//return n == -1 ? -1 : 0; // return -1 on failure, 0 on success
-
-
-	//int num = write(sockfd, msg, msglen);
-
-	//if (num < 0) {
-
-	//	exit(0);
-	//}
 }
 
-int read_buffer(int sockfd, char *msg, int *msglen) {
+void read_buffer(int sockfd, char *buffer, int bufferlen){
 
-	int total = 0;        			// how many bytes we’ve received
-	int n;
+	// printf("---> Reading..\n");
 
-  printf("---> Reading..\n");
+	int num = recv(sockfd, buffer, bufferlen, 0);
 
-	//int num = read(sockfd, buffer, bufferlen);
-	n = recv(sockfd, msg, sizeof(int), 0);
-	if(n == -1) {
-		return -1;
+	// printf("---> What was read: %s\n\n", buffer);
+
+	if (num < 0) {
+		perror("ERROR: Reading from socket didnt go well..");
+		exit(0);
 	}
-	else {
-		*msglen =	atoi(msg);		// header size
-		int bytesleft = *msglen;
-		while(total < *msglen) {
-				n = recv(sockfd, msg+total, bytesleft, 0);
-				if (n == -1) { break; }
-				total += n;
-				bytesleft -= n;
-		}
-		*msglen = total; // return number actually sent here
-	}
-
-  printf("---> What was read: %s\n\n", msg);
-
-	//if (num < 0) {
-		//perror("ERROR: Reading from socket didnt go well..");
-		//exit(0);
-	//}
 }
 
 
@@ -356,7 +318,7 @@ void list_codes(int sockfd)
   printf(" 1 -> Listar codigos das disciplinas\n");
   printf("---------------------------------------\n\n");
 
-  // Adicionar read_result;
+  print_supremo(sockfd);
 
 	printf("\n---------------------------------------\n\n");
 }
@@ -373,8 +335,9 @@ void get_ementa(int sockfd)
   printf("Digite o codigo da disciplina desejada:\n");
   scanf("%s", search_code);
 
-	// Adicionar send_parameter;
-	// Adicionar read_result;
+	send(sockfd, search_code, 6, 0);
+
+	print_supremo(sockfd);
 
 	printf("\n---------------------------------------\n\n");
 }
@@ -391,8 +354,9 @@ void get_comment(int sockfd)
   printf("Digite o codigo da disciplina desejada:\n");
   scanf("%s", search_code);
 
-	// Adicionar send_parameter;
-  // Adicionar read_result;
+	send(sockfd, search_code, 6, 0);
+
+	print_supremo(sockfd);
 
 	printf("\n---------------------------------------\n\n");
 }
@@ -409,10 +373,9 @@ void get_full_info(int sockfd)
   printf("Digite o codigo da disciplina desejada:\n");
   scanf("%s", search_code);
 
-	// Adicionar send_parameter;
-	write_buffer(sockfd, search_code, strlen(search_code));
+	send(sockfd, search_code, 6, 0);
 
-	// Adicionar read_result;
+	print_supremo(sockfd);
 
 	printf("\n---------------------------------------\n\n");
 }
@@ -424,7 +387,7 @@ void get_all_info(int sockfd)
   printf(" 5 -> Listar informacoes de todas as disciplinas\n");
   printf("---------------------------------------\n\n");
 
-	// Adicionar read_result;
+	print_supremo(sockfd);
 
 	printf("\n---------------------------------------\n\n");
 }
@@ -444,9 +407,10 @@ void write_comment(int sockfd)
   scanf("%s", search_code);
 
 	// Adicionar send_parameter;
-	write_buffer(sockfd, search_code, strlen(search_code));
+	send(sockfd, search_code, 6, 0);
 
   printf("\nDigite o comentario que deseja inserir em %s:\n", search_code);
+	scanf(" ");
   fgets(comment, sizeof(comment), stdin);
 
 	// Adicionar send_parameter;
@@ -502,5 +466,25 @@ void print_ops_aluno(){
 	printf(" 4. Listar informacoes de uma disciplina\n");
 	printf(" 5. Listar informacoes de todas as disciplinas\n");
 	printf("\n--------------------------------------- \n\n");
+
+}
+
+void print_supremo(int sockfd){
+
+	//LENDO TAMANHO DA frase
+	char tamemstring[10];
+
+	read_buffer(sockfd, tamemstring, sizeof(int));
+
+	//printf("tamanho recebido: %s\n", tamemstring);
+
+	int tam = atoi(tamemstring);
+
+	char frase[MAXDATASIZE];
+
+	for (int i = 0; i < tam; i = i+MAXDATASIZE) {
+		read_buffer(sockfd, frase, MAXDATASIZE);
+		printf("%s", frase);
+	}
 
 }
