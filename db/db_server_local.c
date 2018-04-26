@@ -209,60 +209,35 @@ void display_results(MYSQL *con)
   }
   int num_fields = mysql_num_fields(result);
   int num_rows = mysql_num_rows(result);
-  char ***table;
-
-  table = malloc(num_rows * sizeof(char**));
-  for(int i=0; i<num_rows; i++)
-  {
-    table[i] = malloc(num_fields * sizeof(char*));
-  }
+  char table[2500];
 
   MYSQL_ROW row;
   MYSQL_FIELD *field;
 
-  // Lembrar da ideia de salvar tudo em uma matriz de char*, achar o maxlenght de cada coluna, e rodar um for printando espacos pra igualar a diferenca de tamanho entre cada item da coluna.
-
-  //printf("--------------------------------------- \n");
-  int columm=0;
+  strcat(table,"--------------------------------------- \n");
   while(field = mysql_fetch_field(result))
   {
      //printf("%s  ", field->name);
-    table[0][columm] = malloc(strlen(field->name) * sizeof(char));
-    strcpy(table[0][columm], field->name);
-    columm++;
+    strcat(table, field->name);
+    strcat(table, " ");
   }
-  //printf("\n---------------------------------------\n");
+  strcat(table,"\n---------------------------------------\n");
 
-  int line = 1;
   while ((row = mysql_fetch_row(result)))
   {
       for(int i = 0; i < num_fields; i++)
       {
           //printf("%s  ", row[i] ? row[i] : "NULL");
-          table[line][i] = malloc(strlen(row[i]) * sizeof(char));
-          strcpy(table[line][i], row[i]);
-      }
-      line++;
-      //printf("\n");
-  }
 
-  printf("--------------------------------------- \n");
-  for(int i=0; i<=num_rows; i++)
-  {
-    for(int j=0; j<num_fields; j++)
-    {
-      printf("%s  ", table[i][j] ? table[i][j] : "NULL");
-    }
-    if(i==0)
-    {
-      printf("\n---------------------------------------\n");
-    }
-    else
-    {
-      printf("\n");
-    }
+          strcat(table, row[i]);
+          strcat(table, " ");
+      }
+      strcat(table,"\n");
   }
-  printf("---------------------------------------\n\n");
+  strcat(table,"---------------------------------------\n\n");
+
+  printf("%s", table);
+
   mysql_free_result(result);
 }
 

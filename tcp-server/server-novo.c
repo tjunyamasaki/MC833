@@ -366,38 +366,46 @@ void display_results(MYSQL *con, int sockfd)
   }
   int num_fields = mysql_num_fields(result);
   int num_rows = mysql_num_rows(result);
-	char table[2500];
+  //char ***table;
 
-	MYSQL_ROW row;
-	MYSQL_FIELD *field;
+  //table = malloc(num_rows * sizeof(char**));
+  //for(int i=0; i<num_rows; i++)
+  //{
+  //  table[i] = malloc(num_fields * sizeof(char*));
+  // }
 
-	strcat(table,"--------------------------------------- \n");
-	while(field = mysql_fetch_field(result))
-	{
-		strcat(table, field->name);
-		strcat(table, " ");
-	}
-	strcat(table,"\n---------------------------------------\n");
+  MYSQL_ROW row;
+  MYSQL_FIELD *field;
 
-	while ((row = mysql_fetch_row(result)))
-	{
-			for(int i = 0; i < num_fields; i++)
-			{
-					//printf("%s  ", row[i] ? row[i] : "NULL");
+  // Lembrar da ideia de salvar tudo em uma matriz de char*, achar o maxlenght de cada coluna, e rodar um for printando espacos pra igualar a diferenca de tamanho entre cada item da coluna.
 
-					strcat(table, row[i]);
-					strcat(table, " ");
-			}
-			strcat(table,"\n");
-	}
-	strcat(table,"---------------------------------------\n\n");
+  //printf("\n---------------------------------------\n");
+  // int columm=0;
+  while(field = mysql_fetch_field(result))
+  {
+     printf("%s  ", field->name);
+    // table[0][columm] = malloc(strlen(field->name) * sizeof(char));
+    // strcpy(table[0][columm], field->name);
+    // columm++;
+  }
+  //printf("\n---------------------------------------\n");
 
-	//printf("%s", table);
-	write_buffer(sockfd, table, strlen(table));
+  // int line = 1;
+  while ((row = mysql_fetch_row(result)))
+  {
+      for(int i = 0; i < num_fields; i++)
+      {
+          //printf("%s  ", row[i] ? row[i] : "NULL");
+					write_buffer(sockfd, row[i], strlen(row[i]));
+          // table[line][i] = malloc(strlen(row[i]) * sizeof(char));
+          // strcpy(table[line][i], row[i]);
+      }
+      // line++;
+      printf("\n");
+  }
 
-	mysql_free_result(result);
-	}
-
+  printf("---------------------------------------\n\n");
+  mysql_free_result(result);
 }
 
 // *********************** Operacoes ALUNO/PROFESSOR *********************** //
