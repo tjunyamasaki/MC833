@@ -567,8 +567,15 @@ void communication_time_eval(int sockfd)
 	TIME sent, received, diff;
 	char buffer[MAXDATASIZE];
 	int i;
+	FILE *f = fopen("server.txt", "a");
 
-	for(i=0; i<99; i++)
+	if (f == NULL)
+	{
+    	printf("Error opening file!\n");
+    	exit(1);
+	}
+
+	for(i=0; i<98; i++)
 	{
 		buffer[i] = 'a';
 	}
@@ -587,6 +594,7 @@ void communication_time_eval(int sockfd)
 
 	if(!timeval_subtract(&diff, &sent, &received))
 	{
-			printf("T3 - T2: %ld.%06d\n", diff.tv_sec, diff.tv_usec);
+			fprintf(f, "T3 - T2: %ld.%06d\n", diff.tv_sec, diff.tv_usec);
 	}
+	fclose(f);
 }
