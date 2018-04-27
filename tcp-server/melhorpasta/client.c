@@ -184,7 +184,7 @@ void professor(int sockfd, char *buf)
 
 		if(choice)
 		{
-			if(choice < 7 && choice > 0) {
+			if(choice <= 7 && choice > 0) {
 				// Envia OP Code
 				write_buffer(sockfd, opcode, 1);
 
