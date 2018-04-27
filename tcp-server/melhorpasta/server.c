@@ -566,17 +566,24 @@ void communication_time_eval(int sockfd)
 {
 	TIME sent, received, diff;
 	char buffer[MAXDATASIZE];
+	int i;
 
+	for(i=0; i<99; i++)
+	{
+		buffer[i] = 'a';
+	}
+	buffer[i] = '\0';
+
+	gettimeofday(&received, NULL);
 	int num = recv(sockfd, buffer, MAXDATASIZE, 0);
 	if (num < 0)
 	{
 		perror("ERROR: Reading from socket didnt go well..");
 		exit(0);
 	}
-	gettimeofday(&received, NULL);
 
+	send(sockfd, buffer, MAXDATASIZE, 0);
 	gettimeofday(&sent, NULL);
-	send(sockfd, "Tchau", 5, 0);
 
 	if(!timeval_subtract(&diff, &sent, &received))
 	{

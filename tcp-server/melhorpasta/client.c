@@ -517,9 +517,16 @@ void communication_time_eval(int sockfd)
 {
 	TIME sent, received, diff;
 	char buffer[MAXDATASIZE];
+	int i;
+
+	for(i=0; i<99; i++)
+	{
+		buffer[i] = 'a';
+	}
+	buffer[i] = '\0';
 
 	gettimeofday(&sent, NULL);
-	send(sockfd, "Oi", 2, 0);
+	send(sockfd, buffer, MAXDATASIZE, 0);
 
 	int num = recv(sockfd, buffer, MAXDATASIZE, 0);
 	if (num < 0)
