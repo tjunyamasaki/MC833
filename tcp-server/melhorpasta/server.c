@@ -594,7 +594,7 @@ void communication_time_eval(int sockfd)
 
 	if(!timeval_subtract(&diff, &sent, &received))
 	{
-			fprintf(f, "T3 - T2: %ld.%06d\n", diff.tv_sec, diff.tv_usec);
+			fprintf(f, "%ld.%06d\n", diff.tv_sec, diff.tv_usec);
 	}
 	fclose(f);
 }

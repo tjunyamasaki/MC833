@@ -58,6 +58,7 @@ void print_results(int sockfd);
 // ****************** Time evaluation for communication ***************************** //
 int timeval_subtract(TIME *result, TIME *x, TIME *y);
 void communication_time_eval(int sockfd);
+void function_time_eval(void (*operation)(int), int sockfd, int opcode);
 
 // ****************** MAIN CODE ***************************** //
 
@@ -191,22 +192,28 @@ void professor(int sockfd, char *buf)
 				switch (choice)
 				{
 					case 1:
-						list_codes(sockfd);
+						//list_codes(sockfd);
+						function_time_eval(list_codes, sockfd, choice);
 						break;
 					case 2:
-						get_ementa(sockfd);
+						//get_ementa(sockfd);
+						function_time_eval(get_ementa, sockfd, choice);
 						break;
 					case 3:
-						get_comment(sockfd);
+						//get_comment(sockfd);
+						function_time_eval(get_comment, sockfd, choice);
 						break;
 					case 4:
-						get_full_info(sockfd);
+						//get_full_info(sockfd);
+						function_time_eval(get_full_info, sockfd, choice);
 						break;
 					case 5:
-						get_all_info(sockfd);
+						//get_all_info(sockfd);
+						function_time_eval(get_all_info, sockfd, choice);
 						break;
 					case 6:
-						write_comment(sockfd);
+						//write_comment(sockfd);
+						function_time_eval(write_comment, sockfd, choice);
 						break;
 					case 7:
 						communication_time_eval(sockfd);
@@ -545,7 +552,33 @@ void communication_time_eval(int sockfd)
 
 	if(!timeval_subtract(&diff, &received, &sent))
 	{
-			fprintf(f, "T4 - T1: %ld.%06d\n", diff.tv_sec, diff.tv_usec);
+			fprintf(f, "%ld.%06d\n", diff.tv_sec, diff.tv_usec);
+	}
+	fclose(f);
+}
+
+void function_time_eval(void (*operation)(int), int sockfd, int opcode)
+{
+	TIME before, after, diff;
+	char filename[15];
+
+	sprintf(filename, "operation_%d", opcode);
+	strcat(filename, ".txt");
+
+	FILE *f = fopen(filename, "a");
+	if (f == NULL)
+	{
+    	printf("Error opening file!\n");
+    	exit(1);
+	}
+
+	gettimeofday(&before, NULL);
+	(*operation)(sockfd);
+	gettimeofday(&after, NULL);
+
+	if(!timeval_subtract(&diff, &after, &before))
+	{
+			fprintf(f, "%ld.%06d\n", diff.tv_sec, diff.tv_usec);
 	}
 	fclose(f);
 }
