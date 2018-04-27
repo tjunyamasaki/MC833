@@ -24,19 +24,16 @@
 #include <my_global.h>
 #include <mysql.h>
 
+// Handling time
+#include <sys/time.h>
 
-#define PORT "8000"  // the port users will be connecting to
-#define BACKLOG 10	 // how many pending connections queue will hold
-#define MAXDATASIZE 100 // max number of bytes we can get at once
-
-// ****************** Prints ***************************** //
-
-void printa(char *msg);
+#define PORT "8000"  // Porta a qual o cliente se conecta
+#define BACKLOG 10	 // Maximo de conexoes pendentes que a fila ira segurar
+#define MAXDATASIZE 100 // Numero maximo de bytes que sao enviados em um pacote
 
 // ************** [Server] - Basic functions ********************** //
 
-void sigchld_handler(int s);
-// get sockaddr, IPv4 or IPv6:
+void sigchld_handler(int s); // Get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa);
 void write_buffer(int sockfd, char *msg);
 void read_buffer(int sockfd, char *msg, int len);
@@ -47,9 +44,12 @@ void initError(MYSQL *con);
 void finish_with_error(MYSQL *con);
 void loginMysql(char *username, char *password, MYSQL *con);
 void execute_querry(MYSQL *con, char* querry_command);
-void display_results(MYSQL *con, int sockfd);
+void send_results(MYSQL *con, int sockfd);
 
 // ******************* Project related functions ******************** //
+
+void professor(MYSQL *con, int sockfd, int opcde);
+void aluno(MYSQL *con, int sockfd, int opcde);
 
 // Operacoes dos alunos/professores
 void list_codes(MYSQL *con, int sockfd);
@@ -61,15 +61,13 @@ void get_all_info(MYSQL *con, int sockfd);
 // Operacoes dos professores
 void write_comment(MYSQL *con, int sockfd);
 
-void professor(MYSQL *con, int sockfd, int opcde);
-void aluno(MYSQL *con, int sockfd, int opcde);
-
+// ****************** MAIN CODE ***************************** //
 
 int main(void)
 {
-	int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
+	int sockfd, new_fd;  // Listen on sock_fd, new connection on new_fd
 	struct addrinfo hints, *servinfo, *p;
-	struct sockaddr_storage their_addr; // connector's address information
+	struct sockaddr_storage their_addr; // Connector's address information
 	socklen_t sin_size;
 	struct sigaction sa;
 	int yes=1;
@@ -83,28 +81,33 @@ int main(void)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE; // use my IP
 
-	if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+	if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0)
+	{
+		fprintf(stderr, "\nGetaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
 
 	// loop through all the results and bind to the first we can
-	for(p = servinfo; p != NULL; p = p->ai_next) {
+	for(p = servinfo; p != NULL; p = p->ai_next)
+	{
 		if ((sockfd = socket(p->ai_family, p->ai_socktype,
-				p->ai_protocol)) == -1) {
-			perror("server: socket");
+				p->ai_protocol)) == -1)
+				{
+			perror("\nServer: socket\n");
 			continue;
 		}
 
 		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
-				sizeof(int)) == -1) {
-			perror("setsockopt");
+				sizeof(int)) == -1)
+				{
+			perror("\nSetsockopt\n");
 			exit(1);
 		}
 
-		if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+		if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1)
+		{
 			close(sockfd);
-			perror("server: bind");
+			perror("\nServer: Bind\n");
 			continue;
 		}
 
@@ -113,42 +116,46 @@ int main(void)
 
 	freeaddrinfo(servinfo); // all done with this structure
 
-	if (p == NULL)  {
-		fprintf(stderr, "server: failed to bind\n");
+	if (p == NULL)
+	{
+		fprintf(stderr, "\nServer: Failed to bind\n");
 		exit(1);
 	}
 
-	if (listen(sockfd, BACKLOG) == -1) {
-		perror("listen");
+	if (listen(sockfd, BACKLOG) == -1)
+	{
+		perror("\nListen\n");
 		exit(1);
 	}
 
 	sa.sa_handler = sigchld_handler; // reap all dead processes
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
-	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-		perror("sigaction");
+	if (sigaction(SIGCHLD, &sa, NULL) == -1)
+	{
+		perror("\nSigaction\n");
 		exit(1);
 	}
 
-
-	while(1) {
-
-		printa("Waiting for new connections..");
+	while(1)
+	{
+		printf("\nWaiting for new connections...\n");
 
 		sin_size = sizeof their_addr;
 		new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
-		if (new_fd == -1) {
-			perror("accept");
+		if (new_fd == -1)
+		{
+			perror("\nAccept\n");
 			continue;
 		}
 
 		inet_ntop(their_addr.ss_family,
 			get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s);
-		printf("server: got connection from %s\n", s);
+		printf("\nServer: got connection from %s\n", s);
 
-		if (!fork()) {
+		if (!fork())
+		{
 
 			close(sockfd); // child doesn't need the listener
 
@@ -159,79 +166,70 @@ int main(void)
 			int user = 1;
 			int opcode;
 
-			while(user){
-
+			while(user)
+			{
 				MYSQL *con = mysql_init(NULL);
 				initError(con);
 
 				//get login from client (professor ou aluno)
-				printa("\nWaiting for login type..\n");
+				printf("\nWaiting for login type...\n\n");
 				read_buffer(new_fd, buf, 1);
 				user = atoi(buf);
 				opcode = 1;
 
-				switch(user){
+				switch(user)
+				{
 					case 1:
-						printa("PROFESSOR Logged In!");
+						printf("PROFESSOR Logged In!\n");
 						loginMysql("professor", "senha123", con);
 						// int num = 1;
-						while(opcode){
-							printa("\nWaiting for opcode..\n");
+						while(opcode)
+						{
+							printf("\nWaiting for opcode...\n");
 							read_buffer(new_fd, buf, 1);
 							opcode = atoi(buf);
-
+							printf("Received opcode %d. Running operation.\n", opcode);
 							professor(con, new_fd, opcode);
 						}
 						break;
 					case 2:
-						printa("ALUNO Logged In!");
+						printf("ALUNO Logged In!\n");
 						loginMysql("aluno", "senha123", con);
-						while(opcode){
-							printa("\nWaiting for opcode..\n");
+						while(opcode)
+						{
+							printf("\nWaiting for opcode...\n");
 							read_buffer(new_fd, buf, 1);
 							opcode = atoi(buf);
-
+							printf("Received opcode %d. Running operation.\n\n", opcode);
 							aluno(con, new_fd, opcode);
 						}
 						break;
 					case 0:
-						printa("Closing Connection..\n");
+						printf("Closing Connection...\n");
 						break;
 					default:
-						printa("Switch case unexpected case..");
-
+						printf("Switch case unexpected option...\n");
 				}
-
-				//Closing sql connection
+				// Closing sql connection
 				mysql_close(con);
 			}
 
-			// -------------------------------------------------------------- //
-			// ------------------------ MAIN SERVER CODE -------------------- //
-			// -------------------------------------------------------------- //
 			close(new_fd);
-			printa("Socket new_fd closed..");
+			printf("Socket new_fd closed..\n");
 			exit(0);
 		}
-		close(new_fd);  // parent doesn't need this
+		close(new_fd);  // Parent doesn't need this
 	}
-
 	return 0;
 }
 
 // ****************** FUNCTIONS *************************** //
 
-// ****************** Prints ******************************//
-
-void printa(char *msg){
-	printf("%s\n", msg);
-}
-
 // ************** [Server] - Basic functions ********************** //
 
 void sigchld_handler(int s)
 {
-	(void)s; // quiet unused variable warning
+	(void)s; // Quiet unused variable warning
 
 	// waitpid() might overwrite errno, so we save and restore it:
 	int saved_errno = errno;
@@ -240,7 +238,7 @@ void sigchld_handler(int s)
 	errno = saved_errno;
 }
 
-// get sockaddr, IPv4 or IPv6:
+// Get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
 	if (sa->sa_family == AF_INET){
@@ -251,59 +249,44 @@ void *get_in_addr(struct sockaddr *sa)
 
 // ***************** WRITE AND READ SOCKET ******************* //
 
-void write_buffer(int sockfd, char *msg) {
-
-	// printf("---> Sending this msg: %s\n\n", msg);
-	//
-	// int num = write(sockfd, msg, msglen);
-	//
-	// if (num < 0) {
-	// 	perror("ERROR: Writing to socket didnt go well..");
-	// 	exit(0);
-	// }
-
-
-
+void write_buffer(int sockfd, char *msg)
+{
 	int tam = strlen(msg);
 	char tamemstring[10];
-
-	printf("tamanho da frase: %d\n", tam);
 
 	sprintf(tamemstring, "%d", tam);
 
 	int num = send(sockfd, tamemstring, sizeof(int), 0);
-	if (num < 0) {
-		perror("ERROR: Writing to socket didnt go well..");
+	if (num < 0)
+	{
+		perror("\nERROR: Writing to socket didnt go well...\n");
 		exit(0);
 	}
 
-	for (int i = 0; i < tam; i = i+MAXDATASIZE) {
-		printf("sending: %s\n", msg+i);
+	for (int i = 0; i < tam; i = i+MAXDATASIZE)
+	{
 		num = send(sockfd, msg+i, MAXDATASIZE, 0);
 		if (num < 0) {
-			perror("ERROR: Writing to socket didnt go well..");
+			perror("\nERROR: Writing to socket didnt go well...\n");
 			exit(0);
 		}
 	}
 }
 
 void read_buffer(int sockfd, char *buffer, int bufferlen) {
-
-  printf("---> Reading..\n");
-
 	int num = recv(sockfd, buffer, bufferlen, 0);
 
-  printf("---> What was read: %s\n\n", buffer);
-
-	if (num < 0) {
-		perror("ERROR: Reading from socket didnt go well..");
+	if (num < 0)
+	{
+		perror("\nERROR: Reading from socket didnt go well...\n");
 		exit(0);
 	}
 }
 
 // ****************** [MYSQL] ************************** //
 
-void initError(MYSQL *con){
+void initError(MYSQL *con)
+{
 	if (con == NULL)
 	{
 		fprintf(stderr, "%s\n", mysql_error(con));
@@ -319,7 +302,8 @@ void finish_with_error(MYSQL *con)
   exit(1);
 }
 
-void loginMysql(char *username, char *password, MYSQL *con){
+void loginMysql(char *username, char *password, MYSQL *con)
+{
 	if (mysql_real_connect(con, "localhost",
 	username, password, "projeto1", 0, NULL, 0) == NULL)
 	{
@@ -330,13 +314,14 @@ void loginMysql(char *username, char *password, MYSQL *con){
 // Executa querry
 void execute_querry(MYSQL *con, char* querry_command)
 {
-  if (mysql_query(con, querry_command)){
+  if (mysql_query(con, querry_command))
+	{
       finish_with_error(con);
   }
 }
 
-// Printa resultados de uma consulta
-void display_results(MYSQL *con, int sockfd)
+// Envia resultados de uma consulta
+void send_results(MYSQL *con, int sockfd)
 {
   MYSQL_RES *result = mysql_store_result(con);
 
@@ -345,41 +330,44 @@ void display_results(MYSQL *con, int sockfd)
     finish_with_error(con);
   }
   int num_fields = mysql_num_fields(result);
-  int num_rows = mysql_num_rows(result);
+
 	char table[2500];
 
-	strcpy(table, "");
+	memset(table,0,sizeof(table));
 
 	MYSQL_ROW row;
 	MYSQL_FIELD *field;
 
-	strcat(table,"--------------------------------------- \n");
-	while(field = mysql_fetch_field(result))
+	strcat(table,"-------------------------------------------------------\n");
+	while((field = mysql_fetch_field(result)))
 	{
 		strcat(table, field->name);
 		strcat(table, " ");
 	}
-	strcat(table,"\n---------------------------------------\n");
+	strcat(table,"\n");
+	strcat(table,"------------------------------------------------------\n");
 
 	while ((row = mysql_fetch_row(result)))
 	{
 			for(int i = 0; i < num_fields; i++)
 			{
-					//printf("%s  ", row[i] ? row[i] : "NULL");
-
 					strcat(table, row[i]);
-					strcat(table, " ");
+					if(i != num_fields - 1)
+					{
+						strcat(table, " ");
+					}
+					else
+					{
+						strcat(table, "\n");
+					}
 			}
-			strcat(table,"\n");
 	}
-	strcat(table,"---------------------------------------\n\n");
-
-	printf("\n\n\n%s\n\n\n", table);
-
+	strcat(table,"------------------------------------------------------\n");
+	strcat(table, "\n");
 
 	write_buffer(sockfd, table);
-	mysql_free_result(result);
 
+	mysql_free_result(result);
 }
 
 // *********************** Operacoes ALUNO/PROFESSOR *********************** //
@@ -390,67 +378,58 @@ void list_codes(MYSQL *con, int sockfd)
   char querry_command[1000];
 
   strcpy(querry_command, "SELECT CODIGO_DISCIPLINA AS CODIGO, TITULO FROM DISCIPLINAS;");
+
   execute_querry(con, querry_command);
 
-	// Alterar para send_results
-  display_results(con, sockfd);
+  send_results(con, sockfd);
 }
 
 // Dado o código de uma disciplina, retornar a ementa;
 void get_ementa(MYSQL *con, int sockfd)
 {
-	int size;
   char search_code[6], querry_command[1000];
 
-  // Adicionar receive_parameter
 	recv(sockfd, search_code, 6, 0);
-  // scanf("%s", search_code);
 
   strcpy(querry_command, "SELECT EMENTA FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
   strcat(querry_command, search_code);
   strcat(querry_command, "';");
+
   execute_querry(con, querry_command);
 
-  // Alterar para send_results
-	display_results(con, sockfd);
+	send_results(con, sockfd);
 }
 
 // Dado o código de uma disciplina, retornar o texto de comentário sobre a próxima aula.
 void get_comment(MYSQL *con, int sockfd)
 {
-	int size;
   char search_code[6], querry_command[1000];
 
-	// Adicionar receive_parameter
 	recv(sockfd, search_code, 6, 0);
-  // scanf("%s", search_code);
 
   strcpy(querry_command, "SELECT COMENTARIO FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
   strcat(querry_command, search_code);
   strcat(querry_command, "';");
+
   execute_querry(con, querry_command);
 
-	// Alterar para send_results
-  display_results(con, sockfd);
+  send_results(con, sockfd);
 }
 
-// Dado o código de uma disciplina, retornar todas as informações desta disciplina;
+// Dado o código de uma disciplina, retornar todas as informações desta disciplina
 void get_full_info(MYSQL *con, int sockfd)
 {
-	int size;
   char search_code[6], querry_command[1000];
 
-	// Adicionar receive_parameter
 	recv(sockfd, search_code, 6, 0);
-  //scanf("%s", search_code);
 
   strcpy(querry_command, "SELECT * FROM DISCIPLINAS WHERE CODIGO_DISCIPLINA = '");
   strcat(querry_command, search_code);
   strcat(querry_command, "';");
+
   execute_querry(con, querry_command);
 
-	// Alterar para send_results
-  display_results(con, sockfd);
+  send_results(con, sockfd);
 }
 
 // Listar todas as informações de todas as disciplinas
@@ -459,10 +438,10 @@ void get_all_info(MYSQL *con, int sockfd)
   char querry_command[1000];
 
   strcpy(querry_command, "SELECT * FROM DISCIPLINAS;");
+
   execute_querry(con, querry_command);
 
-	// Alterar para send_results
-  display_results(con, sockfd);
+  send_results(con, sockfd);
 }
 
 // *********************** Operacoes do PROFESSOR *********************** //
@@ -470,17 +449,10 @@ void get_all_info(MYSQL *con, int sockfd)
 // Escrever um texto de comentário sobre a próxima aula de uma disciplina (apenas usuário professor)
 void write_comment(MYSQL *con, int sockfd)
 {
-	int size;
   char search_code[6], comment[500], querry_command[1000];
 
-  // Adicionar receive_parameter
 	recv(sockfd, search_code, 6, 0);
-  //scanf("%s", search_code);
-
-  // Adicionar receive_parameter
-	// Adicionar print_do_receive
 	recv(sockfd, comment, 500, 0);
-  //fgets(comment, sizeof(comment), stdin);
 
   strcpy(querry_command, "UPDATE DISCIPLINAS SET COMENTARIO = '");
   strcat(querry_command, comment);
