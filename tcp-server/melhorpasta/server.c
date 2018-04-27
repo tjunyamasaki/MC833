@@ -26,6 +26,7 @@
 
 // Handling time
 #include <sys/time.h>
+typedef struct timeval TIME;
 
 #define PORT "8000"  // Porta a qual o cliente se conecta
 #define BACKLOG 10	 // Maximo de conexoes pendentes que a fila ira segurar
@@ -60,6 +61,11 @@ void get_all_info(MYSQL *con, int sockfd);
 
 // Operacoes dos professores
 void write_comment(MYSQL *con, int sockfd);
+
+// ****************** Time evaluation for communication ***************************** //
+int timeval_subtract(TIME *result, TIME *x, TIME *y);
+void communication_time_eval(int sockfd);
+
 
 // ****************** MAIN CODE ***************************** //
 
@@ -489,6 +495,9 @@ void professor(MYSQL *con, int sockfd, int opcode) {
 		case 6:
 			write_comment(con, sockfd);
 			break;
+		case 7:
+			communication_time_eval(sockfd);
+			break;
 		default:
 			printf("\nOperacao invalida. Selecione outra.\n");
 			break;
@@ -519,5 +528,58 @@ void aluno(MYSQL *con, int sockfd, int opcode) {
 		default:
 			printf("\nOperacao invalida. Selecione outra.\n");
 			break;
+	}
+}
+
+// ***************************** Time Evaluation ***************************** //
+
+int timeval_subtract(TIME *result, TIME *x, TIME *y)
+{
+  struct timeval xx = *x;
+  struct timeval yy = *y;
+  x = &xx; y = &yy;
+
+  if (x->tv_usec > 999999)
+  {
+    x->tv_sec += x->tv_usec / 1000000;
+    x->tv_usec %= 1000000;
+  }
+
+  if (y->tv_usec > 999999)
+  {
+    y->tv_sec += y->tv_usec / 1000000;
+    y->tv_usec %= 1000000;
+  }
+
+  result->tv_sec = x->tv_sec - y->tv_sec;
+
+  if ((result->tv_usec = x->tv_usec - y->tv_usec) < 0)
+  {
+    result->tv_usec += 1000000;
+    result->tv_sec--; // borrow
+  }
+
+  return result->tv_sec < 0;
+}
+
+void communication_time_eval(int sockfd)
+{
+	TIME sent, received, diff;
+	char buffer[MAXDATASIZE];
+
+	int num = recv(sockfd, buffer, MAXDATASIZE, 0);
+	if (num < 0)
+	{
+		perror("ERROR: Reading from socket didnt go well..");
+		exit(0);
+	}
+	gettimeofday(&received, NULL);
+
+	gettimeofday(&sent, NULL);
+	send(sockfd, "Tchau", 5, 0);
+
+	if(!timeval_subtract(&diff, &sent, &received))
+	{
+			printf("T3 - T2: %ld.%06d\n", diff.tv_sec, diff.tv_usec);
 	}
 }

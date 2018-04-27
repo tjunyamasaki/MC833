@@ -20,6 +20,7 @@
 
 // Handling time
 #include <sys/time.h>
+typedef struct timeval TIME;
 
 #define PORT "8000" // Porta a qual o cliente se conecta
 #define MAXDATASIZE 100 // Numero maximo de bytes que sao enviados em um pacote
@@ -53,6 +54,10 @@ void print_ops_professor();
 void print_ops_aluno();
 
 void print_results(int sockfd);
+
+// ****************** Time evaluation for communication ***************************** //
+int timeval_subtract(TIME *result, TIME *x, TIME *y);
+void communication_time_eval(int sockfd);
 
 // ****************** MAIN CODE ***************************** //
 
@@ -203,6 +208,9 @@ void professor(int sockfd, char *buf)
 					case 6:
 						write_comment(sockfd);
 						break;
+					case 7:
+						communication_time_eval(sockfd);
+						break;
 				}
 			}
 			else
@@ -331,6 +339,7 @@ void get_ementa(int sockfd)
 
 	send(sockfd, search_code, 6, 0);
 
+	printf("\n");
 	print_results(sockfd);
 }
 
@@ -348,6 +357,7 @@ void get_comment(int sockfd)
 
 	send(sockfd, search_code, 6, 0);
 
+	printf("\n");
 	print_results(sockfd);
 }
 
@@ -469,5 +479,58 @@ void print_results(int sockfd)
 	for (int i = 0; i < tam; i = i+MAXDATASIZE) {
 		read_buffer(sockfd, frase, MAXDATASIZE);
 		printf("%s", frase);
+	}
+}
+
+// ***************************** Time Evaluation ***************************** //
+
+int timeval_subtract(TIME *result, TIME *x, TIME *y)
+{
+  struct timeval xx = *x;
+  struct timeval yy = *y;
+  x = &xx; y = &yy;
+
+  if (x->tv_usec > 999999)
+  {
+    x->tv_sec += x->tv_usec / 1000000;
+    x->tv_usec %= 1000000;
+  }
+
+  if (y->tv_usec > 999999)
+  {
+    y->tv_sec += y->tv_usec / 1000000;
+    y->tv_usec %= 1000000;
+  }
+
+  result->tv_sec = x->tv_sec - y->tv_sec;
+
+  if ((result->tv_usec = x->tv_usec - y->tv_usec) < 0)
+  {
+    result->tv_usec += 1000000;
+    result->tv_sec--; // borrow
+  }
+
+  return result->tv_sec < 0;
+}
+
+void communication_time_eval(int sockfd)
+{
+	TIME sent, received, diff;
+	char buffer[MAXDATASIZE];
+
+	gettimeofday(&sent, NULL);
+	send(sockfd, "Oi", 2, 0);
+
+	int num = recv(sockfd, buffer, MAXDATASIZE, 0);
+	if (num < 0)
+	{
+		perror("ERROR: Reading from socket didnt go well..");
+		exit(0);
+	}
+	gettimeofday(&received, NULL);
+
+	if(!timeval_subtract(&diff, &received, &sent))
+	{
+			printf("T4 - T1: %ld.%06d\n", diff.tv_sec, diff.tv_usec);
 	}
 }
