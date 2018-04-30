@@ -25,12 +25,18 @@ typedef struct timeval TIME;
 #define PORT "8000" // Porta a qual o cliente se conecta
 #define MAXDATASIZE 100 // Numero maximo de bytes que sao enviados em um pacote
 
-// ************** [Server] - Basic functions ********************** //
+// ************** [Client/Server] - Basic functions ************** //
 
-// get sockaddr, IPv4 or IPv6:
+// Get sockaddr, IPv4 or IPv6
 void *get_in_addr(struct sockaddr *sa);
+
+// Funcao para lidar com entrada
+int get_input(char *input);
+
+// Funcoes para comunicacao
 void write_buffer(int sockfd, char *msg, int msglen);
 void read_buffer(int sockfd, char *msg, int msglen);
+
 
 // ******************* Project related functions ******************** //
 
@@ -47,7 +53,7 @@ void get_all_info(int sockfd);
 // Operacoes dos professores
 void write_comment(int sockfd);
 
-// ****************** Prints ***************************** //
+// ****************** Prints ****************** //
 
 void print_tela_inicial();
 void print_ops_professor();
@@ -55,12 +61,12 @@ void print_ops_aluno();
 
 void print_results(int sockfd);
 
-// ****************** Time evaluation for communication ***************************** //
+// ****************** Time evaluation for communication ****************** //
 int timeval_subtract(TIME *result, TIME *x, TIME *y);
 void communication_time_eval(int sockfd);
 void function_time_eval(void (*operation)(int), int sockfd, int opcode);
 
-// ****************** MAIN CODE ***************************** //
+// ****************** MAIN CODE ****************** //
 
 int main(int argc, char *argv[])
 {
@@ -86,7 +92,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	// loop through all the results and connect to the first we can
+	// Loop through all the results and connect to the first we can
 	for(p = servinfo; p != NULL; p = p->ai_next)
 	{
 		if ((sockfd = socket(p->ai_family, p->ai_socktype,
@@ -115,14 +121,9 @@ int main(int argc, char *argv[])
 			s, sizeof s);
 	printf("Client: connecting to %s\n", s);
 
-	freeaddrinfo(servinfo); // all done with this structure
-
-	// -------------------------------------------------------------- //
-	// ------------------------ MAIN CLIENT CODE -------------------- //
-	// -------------------------------------------------------------- //
+	freeaddrinfo(servinfo); // All done with this structure
 
 	int login = 1;
-
 	while(login)
 	{
 		print_tela_inicial();
@@ -133,7 +134,7 @@ int main(int argc, char *argv[])
 		switch(login)
 		{
 			case 1: // Professor
-				// Send professor code
+				// Envia codigo do login de professor
 				write_buffer(sockfd, "1", 1);
 				printf("\nBem Vindo Professor!\n");
 				professor(sockfd, buf);
@@ -141,7 +142,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 2: // Aluno
-				// Send aluno code
+				// Envia codigo do login de aluno
 				write_buffer(sockfd, "2", 1);
 				printf("\nBem Vindo Aluno!\n");
 				aluno(sockfd, buf);
@@ -170,7 +171,6 @@ int main(int argc, char *argv[])
 void professor(int sockfd, char *buf)
 {
 	int num = 1;
-
 	while(num)
 	{
 		print_ops_professor();
@@ -192,7 +192,7 @@ void professor(int sockfd, char *buf)
 				switch (choice)
 				{
 					case 1:
-						//list_codes(sockfd);
+						//list_codes(sockfd); -> Old call. Without getting time.
 						function_time_eval(list_codes, sockfd, choice);
 						break;
 					case 2:
@@ -216,7 +216,7 @@ void professor(int sockfd, char *buf)
 						function_time_eval(write_comment, sockfd, choice);
 						break;
 					case 7:
-						communication_time_eval(sockfd);
+						communication_time_eval(sockfd); // Funcao 'escondida'. Usada apenas para time evaluation.
 						break;
 				}
 			}
@@ -235,60 +235,60 @@ void professor(int sockfd, char *buf)
 
 void aluno(int sockfd, char *buf)
 {
-	int num = 1;
+int choice, size;
 
-	while(num)
+do {
+	print_ops_aluno();
+
+
+
+	printf("Selecione uma operacao:\n");
+	//scanf("%d", &choice);
+
+	char opcode[12];
+	size = get_input(opcode);
+	//sprintf(opcode, "%d", choice);
+	choice = atoi(opcode);
+	// Envia OP Code
+	write_buffer(sockfd, opcode, size);
+
+	switch (choice)
 	{
-		print_ops_aluno();
+		case 1:
+			//list_codes(sockfd);
+			function_time_eval(list_codes, sockfd, choice);
+			break;
+		case 2:
+			//get_ementa(sockfd);
+			function_time_eval(get_ementa, sockfd, choice);
+			break;
+		case 3:
+			//get_comment(sockfd);
+			function_time_eval(get_comment, sockfd, choice);
+			break;
+		case 4:
+			//get_full_info(sockfd);
+			function_time_eval(get_full_info, sockfd, choice);
+			break;
+		case 5:
+			//get_all_info(sockfd);
+			function_time_eval(get_all_info, sockfd, choice);
+			break;
+		default:
+			printf("Invalid Op Code!.\n");
+	}
+} while(choice);
 
-		int choice;
 
-		printf("Selecione uma operacao:\n");
-		scanf("%d", &choice);
+	while()
+	{
 
-		char opcode[12];
-		sprintf(opcode, "%d", choice);
-
-		if(choice)
-		{
-			if(choice < 6 && choice > 0)
-			{
-				// Envia OP Code
-				write_buffer(sockfd, opcode, 1);
-
-				switch (choice)
-				{
-					case 1:
-						list_codes(sockfd);
-						break;
-					case 2:
-						get_ementa(sockfd);
-						break;
-					case 3:
-						get_comment(sockfd);
-						break;
-					case 4:
-						get_full_info(sockfd);
-						break;
-					case 5:
-						get_all_info(sockfd);
-						break;
-				}
-			}
-			else{
-				printf("Invalid Op Code!.\n");
-			}
-		}
-		else{
-			num = choice;
-			write_buffer(sockfd, opcode, 1);
-		}
 	}
 }
 
 // ************** [Server] - Funcoes Basicas ********************** //
 
-// get sockaddr, IPv4 or IPv6:
+// Get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
 	if (sa->sa_family == AF_INET) {
@@ -296,6 +296,16 @@ void *get_in_addr(struct sockaddr *sa)
 	}
 
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
+// Previne inputs invalidos
+int get_input(char *input)
+{
+	fgets(input, sizeof(input), stdin);
+
+	input[strcspn(input, "\r\n")] = '\0';
+
+	return strlen(input);
 }
 
 // ***************** WRITE AND READ SOCKET ***************** //
@@ -379,11 +389,6 @@ void get_full_info(int sockfd)
 
   printf("Digite o codigo da disciplina desejada:\n");
   scanf("%s", search_code);
-
-	scanf(" "); // Cleaning buffer from previous scanf %d
-	fgets(search_code, sizeof(search_code), stdin);
-	search_code[strcspn(search_code, "\r\n")] = '\0';
-	write_buffer(sockfd, search_code, strlen(search_code));
 
 	send(sockfd, search_code, 6, 0);
 
@@ -525,7 +530,7 @@ void communication_time_eval(int sockfd)
 	TIME sent, received, diff;
 	char buffer[MAXDATASIZE];
 	int i;
-	FILE *f = fopen("client.txt", "a");
+	FILE *f = fopen("time_log/client.txt", "a");
 
 	if (f == NULL)
 	{
@@ -552,7 +557,7 @@ void communication_time_eval(int sockfd)
 
 	if(!timeval_subtract(&diff, &received, &sent))
 	{
-			fprintf(f, "%ld.%06d\n", diff.tv_sec, diff.tv_usec);
+			fprintf(f, "%ld.%06ld\n", diff.tv_sec, diff.tv_usec);
 	}
 	fclose(f);
 }
@@ -562,7 +567,7 @@ void function_time_eval(void (*operation)(int), int sockfd, int opcode)
 	TIME before, after, diff;
 	char filename[15];
 
-	sprintf(filename, "operation_%d", opcode);
+	sprintf(filename, "time_log/operation_%d", opcode);
 	strcat(filename, ".txt");
 
 	FILE *f = fopen(filename, "a");
@@ -578,7 +583,7 @@ void function_time_eval(void (*operation)(int), int sockfd, int opcode)
 
 	if(!timeval_subtract(&diff, &after, &before))
 	{
-			fprintf(f, "%ld.%06d\n", diff.tv_sec, diff.tv_usec);
+			fprintf(f, "%ld.%06ld\n", diff.tv_sec, diff.tv_usec);
 	}
 	fclose(f);
 }
