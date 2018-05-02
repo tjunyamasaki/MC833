@@ -387,6 +387,7 @@ void list_codes(int sockfd)
 
 	read_buffer(sockfd, result);
 	printf("%s", result);
+	printf("********************************************************\n");
 }
 
 // Dado o código de uma disciplina, retornar a ementa;
@@ -403,8 +404,10 @@ void get_ementa(int sockfd)
 	get_input(search_code, sizeof(search_code));
 	write_buffer(sockfd, search_code);
 
+	printf("\n");
 	read_buffer(sockfd, result);
 	printf("%s", result);
+	printf("********************************************************\n");
 }
 
 // Dado o código de uma disciplina, retornar o texto de comentário sobre a próxima aula.
@@ -413,7 +416,7 @@ void get_comment(int sockfd)
 	char result[2500];
   char search_code[10];
 
-  printf("\n-------------------------------------------------------n");
+  printf("\n-------------------------------------------------------\n");
   printf(" 3 -> Buscar comentario sobre a proxima aula\n");
   printf("-------------------------------------------------------\n\n");
 
@@ -425,6 +428,7 @@ void get_comment(int sockfd)
 	printf("\n");
 	read_buffer(sockfd, result);
 	printf("%s", result);
+	printf("********************************************************\n");
 }
 
 // Dado o código de uma disciplina, retornar todas as informações desta disciplina;
@@ -442,8 +446,10 @@ void get_full_info(int sockfd)
 	get_input(search_code, sizeof(search_code));
 	write_buffer(sockfd, search_code);
 
+	printf("\n");
 	read_buffer(sockfd, result);
 	printf("%s", result);
+	printf("********************************************************\n");
 }
 
 // Listar todas as informações de todas as disciplinas
@@ -457,6 +463,7 @@ void get_all_info(int sockfd)
 
 	read_buffer(sockfd, result);
 	printf("%s", result);
+	printf("********************************************************\n");
 }
 
 // *********** Operacoes do PROFESSOR *********** //
@@ -481,7 +488,7 @@ void write_comment(int sockfd)
 	write_buffer(sockfd, comment);
 
 	printf("\n*** Comentario adicionado!! ***\n");
-  printf("-------------------------------------------------------\n\n");
+	printf("\n********************************************************\n");
 }
 
 // *********** Prints *********** //
@@ -563,7 +570,7 @@ void communication_time_eval(int sockfd)
 	TIME sent, received, diff;
 	char buffer[MAXDATASIZE];
 	int i;
-	FILE *f = fopen("time_log/client.txt", "a");
+	FILE *f = fopen("../logs/time_log/client.txt", "a");
 
 	if (f == NULL)
 	{
@@ -600,7 +607,7 @@ void function_time_eval(void (*operation)(int), int sockfd, int opcode)
 	TIME before, after, diff;
 	char filename[50];
 
-	sprintf(filename, "time_log/operation_%d", opcode);
+	sprintf(filename, "../logs/time_log/operation_%d", opcode);
 	strcat(filename, ".txt");
 
 	FILE *f = fopen(filename, "a");

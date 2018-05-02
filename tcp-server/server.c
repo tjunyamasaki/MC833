@@ -616,7 +616,7 @@ void communication_time_eval(int sockfd)
 	TIME sent, received, diff;
 	char buffer[MAXDATASIZE];
 	int i;
-	FILE *f = fopen("time_log/server.txt", "a");
+	FILE *f = fopen("../logs/time_log/server.txt", "a");
 
 	if (f == NULL)
 	{

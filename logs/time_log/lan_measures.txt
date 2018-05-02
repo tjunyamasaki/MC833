@@ -1,0 +1,42 @@
+File: conn_time.txt
+n = 2809
+Mean = 0.008270
+Standard Deviation = 0.012575
+Intervalo de confianca: (0.008270 - 0.000465 , 0.008270 + 0.000465)
+
+File: operation_1.txt
+n = 893
+Mean = 0.085628
+Standard Deviation = 0.043744
+Intervalo de confianca: (0.085628 - 0.002869 , 0.085628 + 0.002869)
+
+File: operation_2.txt
+n = 721
+Mean = 0.097516
+Standard Deviation = 0.026070
+Intervalo de confianca: (0.097516 - 0.001903 , 0.097516 + 0.001903)
+
+File: operation_3.txt
+n = 699
+Mean = 0.104853
+Standard Deviation = 0.157766
+Intervalo de confianca: (0.104853 - 0.011696 , 0.104853 + 0.011696)
+
+File: operation_4.txt
+n = 932
+Mean = 0.100530
+Standard Deviation = 0.040681
+Intervalo de confianca: (0.100530 - 0.002612 , 0.100530 + 0.002612)
+
+File: operation_5.txt
+n = 1038
+Mean = 0.083431
+Standard Deviation = 0.081882
+Intervalo de confianca: (0.083431 - 0.004981 , 0.083431 + 0.004981)
+
+File: operation_6.txt
+n = 3018
+Mean = 0.000736
+Standard Deviation = 0.000797
+Intervalo de confianca: (0.000736 - 0.000028 , 0.000736 + 0.000028)
+

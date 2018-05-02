@@ -9,8 +9,8 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 
-while /bin/true; do
+while [ true ]; do
   ( flock -n 9 || exit 1
-  $DIR/client 192.168.0.172 < $DIR/testcase.in
+  $DIR/client rabbitnode.stream < $DIR/testcase.in
   ) 9> /dev/null
 done
