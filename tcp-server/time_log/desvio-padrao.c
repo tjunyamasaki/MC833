@@ -34,9 +34,11 @@ int main()
     i=0;
     while (fscanf(f, "%f", &data[i]) != EOF) { i++; }
 
-    printf("Mean = ")
+    printf("n = %d\n", n);
+    printf("Mean = %f\n", mean/n);
+    printf("Standard Deviation = %.6f\n", calculateSD(data, n));
 
-    printf("\nStandard Deviation = %.6f", calculateSD(data, n));
+    free(data);
 
     return 0;
 }
