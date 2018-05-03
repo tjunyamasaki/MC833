@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 
@@ -9,14 +10,26 @@ void get_conn_time();
 
 int main()
 {
-    get_conn_time();
-    measureAll("conn_time.txt");
-    measureAll("operation_1.txt");
-    measureAll("operation_2.txt");
-    measureAll("operation_3.txt");
-    measureAll("operation_4.txt");
-    measureAll("operation_5.txt");
-    measureAll("operation_6.txt");
+    get_conn_time("operation_1.txt");
+    get_conn_time("operation_2.txt");
+    get_conn_time("operation_3.txt");
+    get_conn_time("operation_4.txt");
+    get_conn_time("operation_5.txt");
+    get_conn_time("operation_6.txt");
+
+    measureAll("client_operation_1.txt");
+    measureAll("client_operation_2.txt");
+    measureAll("client_operation_3.txt");
+    measureAll("client_operation_4.txt");
+    measureAll("client_operation_5.txt");
+    measureAll("client_operation_6.txt");
+
+    measureAll("comm_operation_1.txt");
+    measureAll("comm_operation_2.txt");
+    measureAll("comm_operation_3.txt");
+    measureAll("comm_operation_4.txt");
+    measureAll("comm_operation_5.txt");
+    measureAll("comm_operation_6.txt");
 
     return 0;
 }
@@ -87,29 +100,36 @@ void measureAll(char filename[50])
     fclose(write_file);
 }
 
-void get_conn_time()
+void get_conn_time(char operation[15])
 {
     FILE *server, *client, *result;
     float server_time, client_time;
+    char server_name[50] = "server_";
+    char client_name[50] = "client_";
+    char result_name[50] = "comm_";
 
-    server = fopen("server.txt", "r");
+    strcat(server_name, operation);
+    server = fopen(server_name, "r");
+
     if (server == NULL)
     {
-        printf("Error opening file!\n");
+        printf("Error opening server file!\n");
         return;
     }
 
-    client = fopen("client.txt", "r");
+    strcat(client_name, operation);
+    client = fopen(client_name, "r");
     if (client == NULL)
     {
-        printf("Error opening file!\n");
+        printf("Error opening client file!\n");
         return;
     }
 
-    result = fopen("conn_time.txt", "a");
+    strcat(result_name, operation);
+    result = fopen(result_name, "a");
     if (result == NULL)
     {
-        printf("Error opening file!\n");
+        printf("Error opening result file!\n");
         return;
     }
 
