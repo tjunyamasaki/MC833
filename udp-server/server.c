@@ -53,18 +53,18 @@ void professor(int sockfd, char *ip);
 void aluno(int sockfd, char *ip);
 
 // Operacoes dos alunos/professores
-void list_codes(MYSQL *con, int sockfd, TIME *end_time);
-void get_ementa(MYSQL *con, int sockfd, char *ip, TIME *end_time);
-void get_comment(MYSQL *con, int sockfd, char *ip, TIME *end_time);
-void get_full_info(MYSQL *con, int sockfd, char *ip, TIME *end_time);
-void get_all_info(MYSQL *con, int sockfd, TIME *end_time);
+void list_codes(MYSQL *con, int sockfd);
+void get_ementa(MYSQL *con, int sockfd, char *ip);
+void get_comment(MYSQL *con, int sockfd, char *ip);
+void get_full_info(MYSQL *con, int sockfd, char *ip);
+void get_all_info(MYSQL *con, int sockfd);
 
 // Operacoes dos professores
-void write_comment(MYSQL *con, int sockfd, char *ip, TIME *end_time);
+void write_comment(MYSQL *con, int sockfd, char *ip);
 
 // ****************** Avaliacao do tempo para communicacao ****************** //
 int timeval_subtract(TIME *result, TIME *x, TIME *y);
-void function_time_eval(TIME before, TIME after, char opcode[5]);
+void communication_time_eval(int sockfd);
 
 // ****************** MAIN CODE ****************** //
 
@@ -162,7 +162,7 @@ int main(void)
 			close(sockfd); // Child doesn't need the listener
 
 			int user, connected;
-			char input[5];
+			char input[3];
 			do {
 				printf("\n(%s) -> Waiting for login type...\n", ip);
 				connected = read_buffer(new_fd, input, ip);  // Opcao de login vinda do Client.
@@ -226,12 +226,12 @@ void *get_in_addr(struct sockaddr *sa)
 void write_buffer(int sockfd, char *msg)
 {
 	int bytesleft, numbytes;
-	char header[6], *auxmsg;
+	char header[4], *auxmsg;
 
 	bytesleft = strlen(msg);
 	sprintf(header, "%d", bytesleft);
 
-	numbytes = send(sockfd, header, 6, 0);
+	numbytes = send(sockfd, header, 4, 0);
 	if (numbytes < 0)
 	{
 		perror("\nERROR: Writing to socket didnt go well...\n");
@@ -256,10 +256,10 @@ void write_buffer(int sockfd, char *msg)
 
 int read_buffer(int sockfd, char *msg, char *ip)
 {
-	char header[6], *workbuffer, *auxpointer;
+	char header[4], *workbuffer, *auxpointer;
 	int numbytes, bytesleft, bytesrcv = 0;
 
-	numbytes = recv(sockfd, header, 6, 0);  // Recebe header
+	numbytes = recv(sockfd, header, 4, 0);  // Recebe header
 
 	if (numbytes < 0)
 	{
@@ -351,7 +351,7 @@ void send_results(MYSQL *con, int sockfd)
   }
   int num_fields = mysql_num_fields(result);
 
-	char table[15000];
+	char table[2500];
 
 	memset(table,0,sizeof(table));
 
@@ -402,18 +402,15 @@ void professor(int sockfd, char *ip)
 	printf("\n(%s) *** PROFESSOR Logged In! ***\n", ip);
 
 	int opcode, connected;
-	char input[5];
-	TIME start_time, end_time;
+	char input[3];
 
 	do {
 		printf("\n(%s) -> Waiting for opcode...\n", ip);
-
 		connected = read_buffer(sockfd, input, ip);
-		gettimeofday(&start_time, NULL);
+		opcode = atoi(input);
 
 		if(connected)
 		{
-			opcode = atoi(input);
 			printf("(%s) Received opcode %d. Running...\n", ip, opcode);
 			switch(opcode)
 			{
@@ -421,28 +418,25 @@ void professor(int sockfd, char *ip)
 					printf("\n(%s) Finalizando sessao!\n", ip);
 					break;
 				case 1:
-					list_codes(con, sockfd, &end_time);
-					function_time_eval(start_time, end_time, input);
+					list_codes(con, sockfd);
 					break;
 				case 2:
-					get_ementa(con, sockfd, ip, &end_time);
-					function_time_eval(start_time, end_time, input);
+					get_ementa(con, sockfd, ip);
 					break;
 				case 3:
-					get_comment(con, sockfd, ip, &end_time);
-					function_time_eval(start_time, end_time, input);
+					get_comment(con, sockfd, ip);
 					break;
 				case 4:
-					get_full_info(con, sockfd, ip, &end_time);
-					function_time_eval(start_time, end_time, input);
+					get_full_info(con, sockfd, ip);
 					break;
 				case 5:
-					get_all_info(con, sockfd, &end_time);
-					function_time_eval(start_time, end_time, input);
+					get_all_info(con, sockfd);
 					break;
 				case 6:
-					write_comment(con, sockfd, ip, &end_time);
-					function_time_eval(start_time, end_time, input);
+					write_comment(con, sockfd, ip);
+					break;
+				case 7:
+					communication_time_eval(sockfd);
 					break;
 				default:
 					printf("\n(%s) Operacao invalida. Selecione outra.\n", ip);
@@ -461,44 +455,35 @@ void aluno(int sockfd, char *ip)
 	printf("\n(%s) *** ALUNO Logged In! ***\n", ip);
 
 	int opcode, connected;
-	char input[5];
-	TIME start_time, end_time;
+	char buf[MAXDATASIZE];
 
 	do {
 		printf("\n(%s) -> Waiting for opcode...\n", ip);
-
-		connected = read_buffer(sockfd, input, ip);
-		gettimeofday(&start_time, NULL);
+		connected = read_buffer(sockfd, buf, ip);
+		opcode = atoi(buf);
 
 		if(connected)
 		{
-			opcode = atoi(input);
 			printf("\n(%s) Received opcode %d. Running...\n", ip, opcode);
-
 			switch (opcode)
 			{
 				case 0:
 					printf("\n(%s) Finalizando sessao!\n", ip);
 					break;
 				case 1:
-					list_codes(con, sockfd, &end_time);
-					function_time_eval(start_time, end_time, input);
+					list_codes(con, sockfd);
 					break;
 				case 2:
-					get_ementa(con, sockfd, ip, &end_time);
-					function_time_eval(start_time, end_time, input);
+					get_ementa(con, sockfd, ip);
 					break;
 				case 3:
-					get_comment(con, sockfd, ip, &end_time);
-					function_time_eval(start_time, end_time, input);
+					get_comment(con, sockfd, ip);
 					break;
 				case 4:
-					get_full_info(con, sockfd, ip, &end_time);
-					function_time_eval(start_time, end_time, input);
+					get_full_info(con, sockfd, ip);
 					break;
 				case 5:
-					get_all_info(con, sockfd, &end_time);
-					function_time_eval(start_time, end_time, input);
+					get_all_info(con, sockfd);
 					break;
 				default:
 					printf("\n(%s) Operacao invalida. Selecione outra.\n", ip);
@@ -511,19 +496,19 @@ void aluno(int sockfd, char *ip)
 // *********** Operacoes de ALUNO e PROFESSOR *********** //
 
 // Listar todos os códigos de disciplinas com seus respectivos títulos;
-void list_codes(MYSQL *con, int sockfd, TIME *end_time)
+void list_codes(MYSQL *con, int sockfd)
 {
   char querry_command[1000];
 
   strcpy(querry_command, "SELECT CODIGO_DISCIPLINA AS CODIGO, TITULO FROM DISCIPLINAS;");
 
   execute_querry(con, querry_command);
-	gettimeofday(end_time, NULL);
+
   send_results(con, sockfd);
 }
 
 // Dado o código de uma disciplina, retornar a ementa;
-void get_ementa(MYSQL *con, int sockfd, char *ip, TIME *end_time)
+void get_ementa(MYSQL *con, int sockfd, char *ip)
 {
   char search_code[6], querry_command[1000];
 
@@ -533,13 +518,12 @@ void get_ementa(MYSQL *con, int sockfd, char *ip, TIME *end_time)
 	  strcat(querry_command, search_code);
 	  strcat(querry_command, "';");
 	  execute_querry(con, querry_command);
-		gettimeofday(end_time, NULL);
 		send_results(con, sockfd);
 	}
 }
 
 // Dado o código de uma disciplina, retornar o texto de comentário sobre a próxima aula.
-void get_comment(MYSQL *con, int sockfd, char *ip, TIME *end_time)
+void get_comment(MYSQL *con, int sockfd, char *ip)
 {
   char search_code[6], querry_command[1000];
 
@@ -549,13 +533,12 @@ void get_comment(MYSQL *con, int sockfd, char *ip, TIME *end_time)
 	  strcat(querry_command, search_code);
 	  strcat(querry_command, "';");
 	  execute_querry(con, querry_command);
-		gettimeofday(end_time, NULL);
 	  send_results(con, sockfd);
 	}
 }
 
 // Dado o código de uma disciplina, retornar todas as informações desta disciplina
-void get_full_info(MYSQL *con, int sockfd, char *ip, TIME *end_time)
+void get_full_info(MYSQL *con, int sockfd, char *ip)
 {
   char search_code[6], querry_command[1000];
 
@@ -565,28 +548,26 @@ void get_full_info(MYSQL *con, int sockfd, char *ip, TIME *end_time)
 		strcat(querry_command, search_code);
 		strcat(querry_command, "';");
 		execute_querry(con, querry_command);
-		gettimeofday(end_time, NULL);
 		send_results(con, sockfd);
   }
 }
 
 // Listar todas as informações de todas as disciplinas
-void get_all_info(MYSQL *con, int sockfd, TIME *end_time)
+void get_all_info(MYSQL *con, int sockfd)
 {
   char querry_command[1000];
 
   strcpy(querry_command, "SELECT * FROM DISCIPLINAS;");
   execute_querry(con, querry_command);
-	gettimeofday(end_time, NULL);
   send_results(con, sockfd);
 }
 
 // *********** Operacoes do PROFESSOR *********** //
 
 // Escrever um texto de comentário sobre a próxima aula de uma disciplina (apenas usuário professor)
-void write_comment(MYSQL *con, int sockfd, char *ip, TIME *end_time)
+void write_comment(MYSQL *con, int sockfd, char *ip)
 {
-  char search_code[6], comment[500], querry_command[1000], response[6];
+  char search_code[6], comment[500], querry_command[1000];
 
 	if((read_buffer(sockfd, search_code, ip)) && (read_buffer(sockfd, comment, ip)))
 	{
@@ -596,10 +577,6 @@ void write_comment(MYSQL *con, int sockfd, char *ip, TIME *end_time)
 	  strcat(querry_command, search_code);
 	  strcat(querry_command, "';");
 	  execute_querry(con, querry_command);
-
-		sprintf(response, "%d", (int)mysql_affected_rows(con));
-		gettimeofday(end_time, NULL);
-		write_buffer(sockfd, response);
 	}
 }
 
@@ -634,22 +611,37 @@ int timeval_subtract(TIME *result, TIME *x, TIME *y)
   return result->tv_sec < 0;
 }
 
-void function_time_eval(TIME before, TIME after, char opcode[5])
+void communication_time_eval(int sockfd)
 {
-	TIME diff;
-	char filename[50] = "time_log/server_operation_";
+	TIME sent, received, diff;
+	char buffer[MAXDATASIZE];
+	int i;
+	FILE *f = fopen("time_log/server.txt", "a");
 
-	strcat(filename, opcode);
-	strcat(filename, ".txt");
-
-	FILE *f = fopen(filename, "a");
 	if (f == NULL)
 	{
     	printf("Error opening file!\n");
     	exit(1);
 	}
 
-	if(!timeval_subtract(&diff, &after, &before))
+	for(i=0; i<98; i++)
+	{
+		buffer[i] = 'a';
+	}
+	buffer[i] = '\0';
+
+	gettimeofday(&received, NULL);
+	int num = recv(sockfd, buffer, MAXDATASIZE, 0);
+	if (num <= 0)
+	{
+		perror("ERROR: Reading from socket didnt go well..");
+		exit(0);
+	}
+
+	send(sockfd, buffer, MAXDATASIZE, 0);
+	gettimeofday(&sent, NULL);
+
+	if(!timeval_subtract(&diff, &sent, &received))
 	{
 			fprintf(f, "%ld.%06ld\n", diff.tv_sec, diff.tv_usec);
 	}
