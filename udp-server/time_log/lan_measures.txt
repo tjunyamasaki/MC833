@@ -1,0 +1,72 @@
+File: client_operation_1.txt
+n = 2430
+Mean = 0.015800
+Standard Deviation = 0.006286
+Intervalo de confianca: (0.015800 - 0.000250 , 0.015800 + 0.000250)
+
+File: client_operation_2.txt
+n = 2430
+Mean = 0.045799
+Standard Deviation = 0.008462
+Intervalo de confianca: (0.045799 - 0.000336 , 0.045799 + 0.000336)
+
+File: client_operation_3.txt
+n = 2429
+Mean = 0.046042
+Standard Deviation = 0.015045
+Intervalo de confianca: (0.046042 - 0.000598 , 0.046042 + 0.000598)
+
+File: client_operation_4.txt
+n = 2429
+Mean = 0.046093
+Standard Deviation = 0.010562
+Intervalo de confianca: (0.046093 - 0.000420 , 0.046093 + 0.000420)
+
+File: client_operation_5.txt
+n = 2429
+Mean = 0.046130
+Standard Deviation = 0.012413
+Intervalo de confianca: (0.046130 - 0.000494 , 0.046130 + 0.000494)
+
+File: client_operation_6.txt
+n = 2429
+Mean = 0.046975
+Standard Deviation = 0.009238
+Intervalo de confianca: (0.046975 - 0.000367 , 0.046975 + 0.000367)
+
+File: comm_operation_1.txt
+n = 2430
+Mean = 0.007706
+Standard Deviation = 0.003031
+Intervalo de confianca: (0.007706 - 0.000121 , 0.007706 + 0.000121)
+
+File: comm_operation_2.txt
+n = 2430
+Mean = 0.022564
+Standard Deviation = 0.003351
+Intervalo de confianca: (0.022564 - 0.000133 , 0.022564 + 0.000133)
+
+File: comm_operation_3.txt
+n = 2429
+Mean = 0.022721
+Standard Deviation = 0.006987
+Intervalo de confianca: (0.022721 - 0.000278 , 0.022721 + 0.000278)
+
+File: comm_operation_4.txt
+n = 2429
+Mean = 0.022811
+Standard Deviation = 0.005266
+Intervalo de confianca: (0.022811 - 0.000209 , 0.022811 + 0.000209)
+
+File: comm_operation_5.txt
+n = 2429
+Mean = 0.022786
+Standard Deviation = 0.005285
+Intervalo de confianca: (0.022786 - 0.000210 , 0.022786 + 0.000210)
+
+File: comm_operation_6.txt
+n = 2429
+Mean = 0.022683
+Standard Deviation = 0.004559
+Intervalo de confianca: (0.022683 - 0.000181 , 0.022683 + 0.000181)
+
