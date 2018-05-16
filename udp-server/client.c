@@ -43,18 +43,18 @@ void read_buffer(int sockfd, char *msg);
 void login(int sockfd);
 
 // Interfaces do aluno e professor
-void professor(int sockfd);
-void aluno(int sockfd);
+void professor(int sockfd, char *usercode);
+void aluno(int sockfd, char *usercode);
 
 // Operacoes dos alunos/professores
-void list_codes(int sockfd, char opcode[5]);
-void get_ementa(int sockfd, char opcode[5]);
-void get_comment(int sockfd, char opcode[5]);
-void get_full_info(int sockfd, char opcode[5]);
-void get_all_info(int sockfd, char opcode[5]);
+void list_codes(int sockfd, char *msg_buf);
+void get_ementa(int sockfd, char *msg_buf);
+void get_comment(int sockfd, char *msg_buf);
+void get_full_info(int sockfd, char *msg_buf);
+void get_all_info(int sockfd, char *msg_buf);
 
 // Operacoes dos professores
-void write_comment(int sockfd, char opcode[5]);
+void write_comment(int sockfd, char *msg_buf);
 
 // ****************** Prints ****************** //
 
@@ -65,7 +65,7 @@ void print_ops_aluno();
 // ****************** Time evaluation for communication ****************** //
 int timeval_subtract(TIME *result, TIME *x, TIME *y);
 void communication_time_eval(int sockfd);
-void function_time_eval(void (*operation)(int, char[5]), int sockfd, char opcode[5]);
+void function_time_eval(void (*operation)(int, char[1000]), int sockfd, char msg_buf[1000], char opcode[5]);
 
 // ****************** MAIN CODE ****************** //
 
@@ -149,6 +149,13 @@ void get_input(char *input, size_t maxlen)
 	fgets(input, maxlen, stdin);
 	input[strcspn(input, "\r\n")] = 0;
 }
+
+
+//   					NOVA ESTRUTURA DO BUFFER (A PRINCIPIO)  //
+//   ***************************************************************************************************************
+//   * 6 bytes header  *  2 bytes usercode *  2 bytes opcode   *  8 bytes codigo busca    *   200 bytes comentario *
+//   ***************************************************************************************************************
+
 
 // *********** WRITE AND READ SOCKET *********** //
 
@@ -256,10 +263,10 @@ void login(int sockfd)
 		switch(login)
 		{
 			case 1: // Professor
-				professor(sockfd);
+				professor(sockfd, input);
 				break;
 			case 2: // Aluno
-				aluno(sockfd);
+				aluno(sockfd, input);
 				break;
 			case 0: // Exit
 				printf("\nFechando conexao.\n");
@@ -270,47 +277,47 @@ void login(int sockfd)
 	} while(login);
 }
 
-void professor(int sockfd)
+void professor(int sockfd, char *usercode)
 {
 	int choice;
-	char opcode[5];
+	char msg_buf[1000], opcode[5];
 
 	printf("\n-------------------------------------------------------\n");
 	printf("\n\t\t*** Bem Vindo Professor! ***\n");
 
+
 	do {
+		strcpy(msg_buf, usercode);
+
 		print_ops_professor();
 
 		printf("Selecione uma operacao:\n");
 
 		get_input(opcode, sizeof(opcode));
+
+		strcat(msg_buf, opcode);
+
 		choice = atoi(opcode);
 
 		switch (choice)
 		{
 			case 1:
-				//list_codes(sockfd); -> Old call. Without getting time.
-				function_time_eval(list_codes, sockfd, opcode);
+				function_time_eval(list_codes, sockfd, msg_buf, opcode);
 				break;
 			case 2:
-				//get_ementa(sockfd);
-				function_time_eval(get_ementa, sockfd, opcode);
+				function_time_eval(get_ementa, sockfd, msg_buf, opcode);
 				break;
 			case 3:
-				//get_comment(sockfd);
-				function_time_eval(get_comment, sockfd, opcode);
+				function_time_eval(get_comment, sockfd, msg_buf, opcode);
 				break;
 			case 4:
-				//get_full_info(sockfd);
-				function_time_eval(get_full_info, sockfd, opcode);
+				function_time_eval(get_full_info, sockfd, msg_buf, opcode);
 				break;
 			case 5:
-				//get_all_info(sockfd);
-				function_time_eval(get_all_info, sockfd, opcode);
+				function_time_eval(get_all_info, sockfd, msg_buf, opcode);
 				break;
 			case 6:
-				//write_comment(sockfd);
-				function_time_eval(write_comment, sockfd, opcode);
+				function_time_eval(write_comment, sockfd, msg_buf, opcode);
 				break;
 			case 0:
 					printf("\nProfessor logging out...\n");
@@ -321,42 +328,42 @@ void professor(int sockfd)
 	} while(choice);
 }
 
-void aluno(int sockfd)
+void aluno(int sockfd, char *usercode)
 {
 	int choice;
-	char opcode[5];
+	char msg_buf[1000], opcode[6];
 
 	printf("\n-------------------------------------------------------\n");
 	printf("\n\t\t*** Bem Vindo Aluno! ***\n");
 
 	do {
+		strcpy(msg_buf, usercode);
+
 		print_ops_aluno();
 
 		printf("Selecione uma operacao:\n");
 		get_input(opcode, sizeof(opcode));
+
+		strcat(msg_buf, opcode);
+
 		choice = atoi(opcode);
 
 		switch (choice)
 		{
 			case 1:
-				//list_codes(sockfd);
-				function_time_eval(list_codes, sockfd, opcode);
+				function_time_eval(list_codes, sockfd, msg_buf, opcode);
 				break;
 			case 2:
-				//get_ementa(sockfd);
-				function_time_eval(get_ementa, sockfd, opcode);
+				function_time_eval(get_ementa, sockfd, msg_buf, opcode);
 				break;
 			case 3:
-				//get_comment(sockfd);
-				function_time_eval(get_comment, sockfd, opcode);
+				function_time_eval(get_comment, sockfd, msg_buf, opcode);
 				break;
 			case 4:
-				//get_full_info(sockfd);
-				function_time_eval(get_full_info, sockfd, opcode);
+				function_time_eval(get_full_info, sockfd, msg_buf, opcode);
 				break;
 			case 5:
-				//get_all_info(sockfd);
-				function_time_eval(get_all_info, sockfd, opcode);
+				function_time_eval(get_all_info, sockfd, msg_buf, opcode);
 				break;
 			case 0:
 				printf("\nAluno logging out...\n");
@@ -370,12 +377,12 @@ void aluno(int sockfd)
 // *********** Operacoes de ALUNO e PROFESSOR *********** //
 
 // Listar todos os códigos de disciplinas com seus respectivos títulos;
-void list_codes(int sockfd, char opcode[5])
+void list_codes(int sockfd, char *msg_buf)
 {
 	char result[2500];
 
 	// Envia OP Code
-	write_buffer(sockfd, opcode);
+	write_buffer(sockfd, msg_buf);
 
   printf("\n-------------------------------------------------------\n");
   printf(" 1 -> Listar codigos das disciplinas\n");
@@ -388,13 +395,10 @@ void list_codes(int sockfd, char opcode[5])
 }
 
 // Dado o código de uma disciplina, retornar a ementa;
-void get_ementa(int sockfd, char opcode[5])
+void get_ementa(int sockfd, char *msg_buf)
 {
 	char result[2500];
   char search_code[10];
-
-	// Envia OP Code
-	write_buffer(sockfd, opcode);
 
   printf("\n-------------------------------------------------------\n");
   printf(" 2 -> Buscar ementa\n");
@@ -402,7 +406,10 @@ void get_ementa(int sockfd, char opcode[5])
 
   printf("Digite o codigo da disciplina desejada:\n");
 	get_input(search_code, sizeof(search_code));
-	write_buffer(sockfd, search_code);
+
+	strcat(msg_buf, search_code);
+
+	write_buffer(sockfd, msg_buf);
 
 	printf("\n");
 	read_buffer(sockfd, result);
@@ -411,13 +418,10 @@ void get_ementa(int sockfd, char opcode[5])
 }
 
 // Dado o código de uma disciplina, retornar o texto de comentário sobre a próxima aula.
-void get_comment(int sockfd, char opcode[5])
+void get_comment(int sockfd, char *msg_buf)
 {
 	char result[2500];
   char search_code[10];
-
-	// Envia OP Code
-	write_buffer(sockfd, opcode);
 
   printf("\n-------------------------------------------------------\n");
   printf(" 3 -> Buscar comentario sobre a proxima aula\n");
@@ -426,7 +430,9 @@ void get_comment(int sockfd, char opcode[5])
   printf("Digite o codigo da disciplina desejada:\n");
   get_input(search_code, sizeof(search_code));
 
-	write_buffer(sockfd, search_code);
+	strcat(msg_buf, search_code);
+
+	write_buffer(sockfd, msg_buf);
 
 	printf("\n");
 	read_buffer(sockfd, result);
@@ -435,13 +441,10 @@ void get_comment(int sockfd, char opcode[5])
 }
 
 // Dado o código de uma disciplina, retornar todas as informações desta disciplina;
-void get_full_info(int sockfd, char opcode[5])
+void get_full_info(int sockfd, char *msg_buf)
 {
 	char result[2500];
   char search_code[10];
-
-	// Envia OP Code
-	write_buffer(sockfd, opcode);
 
   printf("\n-------------------------------------------------------\n");
   printf(" 4 -> Listar informacoes de uma disciplina\n");
@@ -450,7 +453,10 @@ void get_full_info(int sockfd, char opcode[5])
   printf("Digite o codigo da disciplina desejada:\n");
 
 	get_input(search_code, sizeof(search_code));
-	write_buffer(sockfd, search_code);
+
+	strcat(msg_buf, search_code);
+
+	write_buffer(sockfd, msg_buf);
 
 	printf("\n");
 	read_buffer(sockfd, result);
@@ -459,12 +465,12 @@ void get_full_info(int sockfd, char opcode[5])
 }
 
 // Listar todas as informações de todas as disciplinas
-void get_all_info(int sockfd, char opcode[5])
+void get_all_info(int sockfd, char *msg_buf)
 {
 	char result[2500];
 
 	// Envia OP Code
-	write_buffer(sockfd, opcode);
+	write_buffer(sockfd, msg_buf);
 
   printf("\n-------------------------------------------------------\n");
   printf(" 5 -> Listar informacoes de todas as disciplinas\n");
@@ -478,13 +484,10 @@ void get_all_info(int sockfd, char opcode[5])
 // *********** Operacoes do PROFESSOR *********** //
 
 // Escrever um texto de comentário sobre a próxima aula de uma disciplina (apenas usuário professor)
-void write_comment(int sockfd, char opcode[5])
+void write_comment(int sockfd, char *msg_buf)
 {
   char search_code[10], comment[500], response[6];
 	int result;
-
-	// Envia OP Code
-	write_buffer(sockfd, opcode);
 
   printf("\n-------------------------------------------------------\n");
   printf(" 6 -> Escrever comentario sobre a proxima aula de uma disciplina\n");
@@ -493,12 +496,14 @@ void write_comment(int sockfd, char opcode[5])
   printf("Digite o codigo da disciplina desejada:\n");
 
 	get_input(search_code, sizeof(search_code));
-	write_buffer(sockfd, search_code);
+	strcat(msg_buf, search_code);
 
   printf("\nDigite o comentario que deseja inserir em %s:\n", search_code);
 
 	get_input(comment, sizeof(comment));
-	write_buffer(sockfd, comment);
+	strcat(msg_buf, comment);
+
+	write_buffer(sockfd, msg_buf);
 
 	read_buffer(sockfd, response);
 	result = atoi(response);
@@ -588,7 +593,7 @@ int timeval_subtract(TIME *result, TIME *x, TIME *y)
   return result->tv_sec < 0;
 }
 
-void function_time_eval(void (*operation)(int, char[5]), int sockfd, char opcode[5])
+void function_time_eval(void (*operation)(int, char[1000]), int sockfd, char msg_buf[1000], char opcode[5])
 {
 	TIME before, after, diff;
 	char filename[50] = "time_log/client_operation_";
@@ -604,7 +609,7 @@ void function_time_eval(void (*operation)(int, char[5]), int sockfd, char opcode
 	}
 
 	gettimeofday(&before, NULL);
-	(*operation)(sockfd, opcode);
+	(*operation)(sockfd, msg_buf);
 	gettimeofday(&after, NULL);
 
 	if(!timeval_subtract(&diff, &after, &before))
