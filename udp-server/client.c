@@ -12,18 +12,19 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <netdb.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 // Handling time
 #include <sys/time.h>
 typedef struct timeval TIME;
 
-#define PORT "8000" // Porta a qual o cliente se conecta
+#define SERVERPORT 8000 // Porta a qual o cliente se conecta
 #define MAXDATASIZE 100 // Numero maximo de bytes que sao enviados em um pacote
+#define MAXBUFLEN 500
 
 // ************** [Client/Server] - Basic functions ************** //
 
@@ -35,7 +36,7 @@ void get_input(char *input, size_t maxlen);
 
 // Funcoes para comunicacao
 void write_buffer(int sockfd, char *msg);
-void read_buffer(int sockfd, char *msg);
+void read_buffer(int sockfd, char *msg, struct sockaddr_in their_addr);
 
 // ******************* Project related functions ******************** //
 
@@ -72,9 +73,8 @@ void function_time_eval(void (*operation)(int, char[1000]), int sockfd, char msg
 int main(int argc, char *argv[])
 {
 	int sockfd;
-	struct addrinfo hints, *servinfo, *p;
-	int rv;
-	char ip[INET6_ADDRSTRLEN];
+  struct sockaddr_in their_addr; // Connector’s address information
+  struct hostent *he;
 
 	if (argc != 2)
 	{
@@ -82,50 +82,31 @@ int main(int argc, char *argv[])
 	    exit(1);
 	}
 
-	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-
-	if ((rv = getaddrinfo(argv[1], PORT, &hints, &servinfo)) != 0)
+	if ((he=gethostbyname(argv[1])) == NULL)				 // Get the host info
 	{
-		fprintf(stderr, "Getaddrinfo: %s\n", gai_strerror(rv));
-		return 1;
+			perror("gethostbyname");
+			exit(1);
 	}
 
-	// Loop through all the results and connect to the first we can
-	for(p = servinfo; p != NULL; p = p->ai_next)
+	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
 	{
-		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
-		{
-			perror("Client: socket");
-			continue;
-		}
-
-		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
-		{
-			perror("Client: connect");
-			close(sockfd);
-			continue;
-		}
-		break;
+			perror("socket");
+			exit(1);
 	}
 
-	if (p == NULL)
-	{
-		fprintf(stderr, "Client: failed to connect\n");
-		return 2;
-	}
+	their_addr.sin_family = AF_INET;     // Host byte order
+	their_addr.sin_port = htons(SERVERPORT); // Short, network byte order
+	their_addr.sin_addr = *((struct in_addr *)he->h_addr);
+	memset(&(their_addr.sin_zero), '\0', 8);  // Zero the rest of the struct
 
-	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), ip, sizeof ip);
 	printf("\n-------------------------------------------------------\n");
-	printf("Client: connecting to %s\n", ip);
+	printf("Client: sending to %s\n", inet_ntoa(their_addr.sin_addr));
 	printf("-------------------------------------------------------\n");
-
-	freeaddrinfo(servinfo); // All done with this structure
 
 	login(sockfd);  // Inicia 'aplicacao'
 
 	close(sockfd);
+
 	return 0;
 }
 
@@ -190,52 +171,27 @@ void write_buffer(int sockfd, char *msg)
 	} while(bytesleft > 0);
 }
 
-void read_buffer(int sockfd, char *msg)
+void read_buffer(int sockfd, struct sockaddr_in their_addr, char *msg)
 {
-	char header[6], *workbuffer, *auxpointer;
-	int numbytes, bytesleft, bytesrcv = 0;
+	char header[6], *workbuffer;
+	int numbytes;
+	char buf[MAXBUFLEN];
+	socklen_t addr_len;
 
-	numbytes = recv(sockfd, header, 6, 0);  // Recebe header
 
-	if (numbytes < 0)
+	addr_len = sizeof(struct sockaddr);
+	if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN-1 , 0, (struct sockaddr *)&their_addr, &addr_len)) == -1)
 	{
-		perror("\nERROR: Reading from socket didnt go well...\n");
-		exit(0);
-	}
-	else if (numbytes == 0)
-	{
-		perror("\nERROR: Connection closed by Server.\n");
-		exit(0);
+			perror("recvfrom");
+			exit(1);
 	}
 
-	bytesleft = atoi(header);
-	workbuffer = malloc(2*bytesleft * sizeof(char)); // Buffer para tratar msg recebida
+	printf("got packet from %s\n", inet_ntoa(their_addr.sin_addr));
+	printf("packet is %d bytes long\n",numbytes);
+	buf[numbytes] = '\0';
+	printf("packet contains \"%s\"\n",buf);
 
-	auxpointer = workbuffer;
-	do {
-		numbytes = recv(sockfd, auxpointer, bytesleft, 0);
-
-		if (numbytes < 0)
-		{
-			perror("\nERROR: Reading from socket didnt go well...\n");
-			exit(0);
-		}
-		else if (numbytes == 0)
-		{
-			perror("\nERROR: Connection closed by Server.\n");
-			exit(0);
-		}
-
-		bytesrcv += numbytes;  // Bytes recebidos ate o momento
-		auxpointer += numbytes;  // Atualiza parte do buffer onde inserir msg recebida
-		bytesleft -= numbytes;  // Bytes que faltam chegar
-
-	} while(bytesleft > 0);
-
-	workbuffer[bytesrcv] = '\0';
-	strncpy(msg, workbuffer, bytesrcv+1);  // Copia apenas msg que deveria ser recebida
-
-	free(workbuffer);  // Descarta possiveis lixos
+	strncpy(msg, buf, numbytes+1);  // Copia apenas msg que deveria ser recebida
 }
 
 // ******************* Funcoes relacionadas ao projeto ******************** //

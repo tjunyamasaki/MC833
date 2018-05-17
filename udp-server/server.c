@@ -15,10 +15,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h>
 #include <arpa/inet.h>
-#include <sys/wait.h>
-#include <signal.h>
 
 //[MYSQL]
 #include <my_global.h>
@@ -28,16 +25,25 @@
 #include <sys/time.h>
 typedef struct timeval TIME;
 
-#define PORT "8000"  // Porta a qual o cliente se conecta
+#define PORT 8000  // Porta a qual o cliente se conecta
 #define BACKLOG 10	 // Maximo de conexoes pendentes que a fila ira segurar
-#define MAXDATASIZE 100 // Numero maximo de bytes que sao enviados em um pacote
+#define MAXBUFLEN 100 // Numero maximo de bytes que sao enviados em um pacote
+
+// Esrutura do datagrama recebido!
+struct parameters
+{
+	char usercode[5];
+	char opcode[5];
+	char search_code[10];
+	char comment[500];
+} typedef Message;
 
 // ************** [Client/Server] - Basic functions ************** //
 
 void sigchld_handler(int s); // Get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa);
 void write_buffer(int sockfd, char *msg);
-int read_buffer(int sockfd, char *usercode, char *opcode, char *search_code, char *comment);
+int read_buffer(int sockfd, struct sockaddr_in their_addr, Message *msg);
 
 // ****************** [MYSQL] ************************** //
 
@@ -49,8 +55,8 @@ void send_results(MYSQL *con, int sockfd);
 
 // ******************* Funcoes especificas do projeto ******************** //
 
-void professor(int sockfd, TIME start_time, char *operation, char *search_code, char *comment);
-void aluno(int sockfd, TIME start_time, char *operation, char *search_code);
+void professor(int sockfd, TIME start_time, Message *msg);
+void aluno(int sockfd, TIME start_time, Message *msg);
 
 // Operacoes dos alunos/professores
 TIME list_codes(MYSQL *con, int sockfd);
@@ -70,156 +76,69 @@ void function_time_eval(TIME before, TIME after, char opcode[5]);
 
 int main(void)
 {
-	int sockfd, new_fd;  // Listen on sock_fd, new connection on new_fd
-	struct addrinfo hints, *servinfo, *p;
-	struct sockaddr_storage their_addr; // Connector's address information
-	socklen_t sin_size;
-	struct sigaction sa;
-	int yes=1;
-	char ip[INET6_ADDRSTRLEN];
-	int rv;
+	int sockfd;
+	struct sockaddr_in my_addr;    // my address information
+	struct sockaddr_in their_addr; // connector’s address information
 
-	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE; // use my IP
-
-	if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0)
+	if ((sockfd = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
 	{
-		fprintf(stderr, "\nGetaddrinfo: %s\n", gai_strerror(rv));
-		return 1;
+		perror("Socket");
+		exit(1);
 	}
 
-	// Loop through all the results and bind to the first we can
-	for(p = servinfo; p != NULL; p = p->ai_next)
-	{
-		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
-		{
-			perror("\nServer: socket\n");
-			continue;
-		}
+	my_addr.sin_family = AF_INET;         // host byte order
+	my_addr.sin_port = htons(PORT);     // short, network byte order
+	my_addr.sin_addr.s_addr = INADDR_ANY; // automatically fill with my IP
+	memset(&(my_addr.sin_zero), '\0', 8); // zero the rest of the struct
 
-		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
-		{
-			perror("\nSetsockopt\n");
+	if (bind(sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr)) == -1)
+	{
+			perror("Bind");
 			exit(1);
-		}
-
-		if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1)
-		{
-			close(sockfd);
-			perror("\nServer: Bind\n");
-			continue;
-		}
-
-		break;
 	}
 
-	freeaddrinfo(servinfo); // All done with this structure
-
-	if (p == NULL)
-	{
-		fprintf(stderr, "\nServer: Failed to bind\n");
-		exit(1);
-	}
-
-	if (listen(sockfd, BACKLOG) == -1)
-	{
-		perror("\nListen\n");
-		exit(1);
-	}
-
-	sa.sa_handler = sigchld_handler; // Mata todos os processos mortos
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART;
-	if (sigaction(SIGCHLD, &sa, NULL) == -1)
-	{
-		perror("\nSigaction\n");
-		exit(1);
-	}
+	// -------------------------------------------------------------- //
+	// ------------------------ MAIN SERVER CODE -------------------- //
+	// -------------------------------------------------------------- //
 
 	while(1)
 	{
-		printf("\n-> Waiting for new connections...\n");
+		int user, received;
+		Message msg;
+		TIME start_time;
 
-		sin_size = sizeof their_addr;
-		new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
-		if (new_fd == -1)
+		printf("\n-> Waiting for message...\n");
+
+		received = read_buffer(sockfd, their_addr, &msg);  // Mensagem vinda do Client.
+
+		gettimeofday(&start_time, NULL);
+		user = atoi(msg.usercode);
+
+		if(received)
 		{
-			perror("\nAccept\n");
-			continue;
+			printf("\n*** Server: got message from %s ***\n", inet_ntoa(their_addr.sin_addr));
+
+			switch(user)
+			{
+				case 1:
+					professor(sockfd, start_time, &msg);
+					break;
+				case 2:
+					aluno(sockfd, start_time, &msg);
+					break;
+				default:
+					printf("\nUnexpected login option.\n");
+			}
 		}
-
-		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), ip, sizeof ip);
-		printf("\n*** Server: got connection from %s ***\n", ip);
-
-		if(!fork())
-		{
-			// -------------------------------------------------------------- //
-			// ------------------------ MAIN SERVER CODE -------------------- //
-			// -------------------------------------------------------------- //
-
-			close(sockfd); // Child doesn't need the listener
-
-			int user, received;
-			char usercode[5], opcode[5], search_code[10], comment[500];
-			TIME start_time;
-
-			do {
-				printf("\n-> Waiting for request...\n");
-				received = read_buffer(new_fd, usercode, opcode, search_code, comment);  // Opcao de login vinda do Client.
-				gettimeofday(&start_time, NULL);
-				user = atoi(usercode);
-
-				if(received)
-				{
-					printf("Received login type %d from %s. Processing...\n", user, ip);
-					switch(user)
-					{
-						case 1:
-							professor(new_fd, start_time, opcode, search_code, comment);
-							break;
-						case 2:
-							aluno(new_fd, start_time, opcode, search_code);
-							break;
-						default:
-							printf("\nUnexpected login option.\n");
-					}
-				}
-			} while(1);
-
-			close(new_fd);
-			printf("\n(%s) Socket closed.\n", ip);
-			exit(0);
-		}
-		close(new_fd);  // Parent doesn't need this
 	}
+	close(sockfd);
+
 	return 0;
 }
 
 // ********************************** FUNCOES ********************************** //
 
 // ***************** [Server/Client] - Funcoes Basicas ***************** //
-
-void sigchld_handler(int s)
-{
-	(void)s; // Quiet unused variable warning
-
-	// waitpid() might overwrite errno, so we save and restore it:
-	int saved_errno = errno;
-
-	while(waitpid(-1, NULL, WNOHANG) > 0);
-	errno = saved_errno;
-}
-
-// Get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
-{
-	if (sa->sa_family == AF_INET){
-		return &(((struct sockaddr_in*)sa)->sin_addr);
-	}
-	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
 
 // *********** WRITE AND READ SOCKET *********** //
 
@@ -231,7 +150,7 @@ void write_buffer(int sockfd, char *msg)
 	bytesleft = strlen(msg);
 	sprintf(header, "%d", bytesleft);
 
-	numbytes = send(sockfd, header, 6, 0);
+	numbytes = sendto(sockfd, header, 6, 0);
 	if (numbytes < 0)
 	{
 		perror("\nERROR: Writing to socket didnt go well...\n");
@@ -240,7 +159,7 @@ void write_buffer(int sockfd, char *msg)
 
 	auxmsg = msg;
 	do {
-		numbytes = send(sockfd, auxmsg, bytesleft, 0);
+		numbytes = sendto(sockfd, auxmsg, bytesleft, 0);
 
 		if (numbytes < 0)
 		{
@@ -254,60 +173,37 @@ void write_buffer(int sockfd, char *msg)
 	} while(bytesleft > 0);
 }
 
-int read_buffer(int sockfd, char *usercode, char *opcode, char *search_code, char *comment)
+int read_buffer(int sockfd, struct sockaddr_in their_addr, Message *msg)
 {
-	char header[6], *workbuffer, *auxpointer;
-	int numbytes, bytesleft, bytesrcv = 0;
+	char header[6];
+	int numbytes;
+	char buf[MAXBUFLEN];
+	socklen_t addr_len;
 
-	numbytes = recv(sockfd, header, 6, 0);  // Recebe header
 
-	if (numbytes < 0)
+	addr_len = sizeof(struct sockaddr);
+	if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN-1 , 0, (struct sockaddr *)&their_addr, &addr_len)) == -1)
 	{
-		perror("\nERROR: Reading from socket didnt go well...\n");
-		exit(0);
-	}
-	else if (numbytes == 0)
-	{
-		printf("\nERROR: Connection closed by Client.\n");
-		return 0;
+			perror("ERROR AT: recvfrom");
+			exit(1);
 	}
 
-	bytesleft = atoi(header);
-	workbuffer = malloc(2*bytesleft * sizeof(char));  // Buffer para tratar msg recebida
+	// TEST SAMPLE
+	printf("got packet from %s\n", inet_ntoa(their_addr.sin_addr));
+	printf("packet is %d bytes long\n",numbytes);
+	buf[numbytes] = '\0';
+	printf("packet contains \"%s\"\n",buf);
+	// ***
 
-	auxpointer = workbuffer;
-	do {
-		numbytes = recv(sockfd, auxpointer, bytesleft, 0);
+	strncpy(msg->usercode, buf, 2);
+	msg->usercode[2] = '\0';
+	strncpy(msg->opcode, buf+2, 2);
+	msg->opcode[2] = '\0';
+	strncpy(msg->search_code, buf+4, 8);
+	msg->search_code[8] = '\0';
+	strncpy(msg->comment, buf+12, 500);
+	msg->comment[500] = '\0';
 
-		if (numbytes < 0)
-		{
-			perror("\nERROR: Reading from socket didnt go well...\n");
-			exit(0);
-		}
-		else if (numbytes == 0)
-		{
-			printf("\nERROR: Connection closed by Client.\n");
-			return 0;
-		}
-
-		bytesrcv += numbytes;  // Bytes recebidos ate o momento
-		auxpointer += numbytes;  // Atualiza parte do buffer onde inserir msg recebida
-		bytesleft -= numbytes;  // Bytes que faltam chegar
-
-	} while(bytesleft > 0);
-
-	workbuffer[bytesrcv] = '\0';
-
-	strncpy(usercode, workbuffer, 2);
-	usercode[2] = '\0';
-	strncpy(opcode, workbuffer+2, 2);
-	opcode[2] = '\0';
-	strncpy(search_code, workbuffer+4, 8);
-	search_code[8] = '\0';
-	strncpy(comment, workbuffer+12, 500);
-	comment[500] = '\0';
-
-	free(workbuffer);
 	return 1;
 }
 
@@ -401,7 +297,7 @@ void send_results(MYSQL *con, int sockfd)
 
 // *********** Interfaces *********** //
 
-void professor(int sockfd, TIME start_time, char *operation, char *search_code, char *comment)
+void professor(int sockfd, TIME start_time, Message *msg)
 {
 	MYSQL *con = mysql_init(NULL);
 	initError(con);
@@ -412,7 +308,7 @@ void professor(int sockfd, TIME start_time, char *operation, char *search_code, 
 	int opcode;
 	TIME end_time;
 
-	opcode = atoi(operation);
+	opcode = atoi(msg->opcode);
 	printf("Received opcode %d. Running...\n", opcode);
 
 	switch(opcode)
@@ -421,29 +317,29 @@ void professor(int sockfd, TIME start_time, char *operation, char *search_code, 
 			end_time = list_codes(con, sockfd);
 			break;
 		case 2:
-			end_time = get_ementa(con, sockfd, search_code);
+			end_time = get_ementa(con, sockfd, msg->search_code);
 			break;
 		case 3:
-			end_time = get_comment(con, sockfd, search_code);
+			end_time = get_comment(con, sockfd, msg->search_code);
 			break;
 		case 4:
-			end_time = get_full_info(con, sockfd, search_code);
+			end_time = get_full_info(con, sockfd, msg->search_code);
 			break;
 		case 5:
 			end_time = get_all_info(con, sockfd);
 			break;
 		case 6:
-			end_time = write_comment(con, sockfd, search_code, comment);
+			end_time = write_comment(con, sockfd, msg->search_code, msg->comment);
 			break;
 		default:
 			printf("\nPedido invalido.\n");
 	}
 
-	function_time_eval(start_time, end_time, operation);
+	function_time_eval(start_time, end_time, msg->opcode);
 	mysql_close(con);  // Closing sql connection
 }
 
-void aluno(int sockfd, TIME start_time, char *operation, char *search_code)
+void aluno(int sockfd, TIME start_time, Message *msg)
 {
 	MYSQL *con = mysql_init(NULL);
 	initError(con);
@@ -454,7 +350,7 @@ void aluno(int sockfd, TIME start_time, char *operation, char *search_code)
 	int opcode;
 	TIME end_time;
 
-	opcode = atoi(operation);
+	opcode = atoi(msg->opcode);
 	printf("\nReceived opcode %d. Running...\n", opcode);
 
 	switch (opcode)
@@ -463,13 +359,13 @@ void aluno(int sockfd, TIME start_time, char *operation, char *search_code)
 			end_time = list_codes(con, sockfd);
 			break;
 		case 2:
-			end_time = get_ementa(con, sockfd, search_code);
+			end_time = get_ementa(con, sockfd, msg->search_code);
 			break;
 		case 3:
-			end_time = get_comment(con, sockfd, search_code);
+			end_time = get_comment(con, sockfd, msg->search_code);
 			break;
 		case 4:
-			end_time = get_full_info(con, sockfd, search_code);
+			end_time = get_full_info(con, sockfd, msg->search_code);
 			break;
 		case 5:
 			end_time = get_all_info(con, sockfd);
@@ -477,7 +373,7 @@ void aluno(int sockfd, TIME start_time, char *operation, char *search_code)
 		default:
 			printf("\nOperacao invalida. \n");
 	}
-	function_time_eval(start_time, end_time, operation);
+	function_time_eval(start_time, end_time, msg->opcode);
 	mysql_close(con);  // Closing sql connection
 }
 
