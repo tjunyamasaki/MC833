@@ -22,40 +22,49 @@
 #include <sys/time.h>
 typedef struct timeval TIME;
 
+// Ip and port struct
+typedef struct sockaddr_in ADDRESS;
+
+// Esrutura do datagrama recebido
+typedef struct parameters
+{
+	char usercode[5];
+	char opcode[5];
+	char search_code[10];
+	char comment[500];
+} Message;
+
 #define SERVERPORT 8000 // Porta a qual o cliente se conecta
-#define MAXDATASIZE 100 // Numero maximo de bytes que sao enviados em um pacote
-#define MAXBUFLEN 500
+#define MAXDATASIZE 3000 // Numero maximo de bytes que sao recebidos em um pacote
+#define MAXBUFLEN 520
 
 // ************** [Client/Server] - Basic functions ************** //
-
-// Get sockaddr, IPv4 or IPv6
-void *get_in_addr(struct sockaddr *sa);
 
 // Funcao para lidar com entrada
 void get_input(char *input, size_t maxlen);
 
 // Funcoes para comunicacao
-void write_buffer(int sockfd, char *msg);
-void read_buffer(int sockfd, char *msg, struct sockaddr_in their_addr);
+void write_buffer(int sockfd, ADDRESS *their_addr, Message *msg);
+void read_buffer(int sockfd, ADDRESS *their_addr, char *msg);
 
 // ******************* Project related functions ******************** //
 
 // Interface de login
-void login(int sockfd);
+void login(int sockfd, ADDRESS *their_addr);
 
 // Interfaces do aluno e professor
-void professor(int sockfd, char *usercode);
-void aluno(int sockfd, char *usercode);
+void professor(int sockfd, ADDRESS *their_addr, Message *msg);
+void aluno(int sockfd, ADDRESS *their_addr, Message *msg);
 
 // Operacoes dos alunos/professores
-void list_codes(int sockfd, char *msg_buf);
-void get_ementa(int sockfd, char *msg_buf);
-void get_comment(int sockfd, char *msg_buf);
-void get_full_info(int sockfd, char *msg_buf);
-void get_all_info(int sockfd, char *msg_buf);
+void list_codes(int sockfd, ADDRESS *their_addr, Message *msg);
+void get_ementa(int sockfd, ADDRESS *their_addr, Message *msg);
+void get_comment(int sockfd, ADDRESS *their_addr, Message *msg);
+void get_full_info(int sockfd, ADDRESS *their_addr, Message *msg);
+void get_all_info(int sockfd, ADDRESS *their_addr, Message *msg);
 
 // Operacoes dos professores
-void write_comment(int sockfd, char *msg_buf);
+void write_comment(int sockfd, ADDRESS *their_addr, Message *msg);
 
 // ****************** Prints ****************** //
 
@@ -66,7 +75,7 @@ void print_ops_aluno();
 // ****************** Time evaluation for communication ****************** //
 int timeval_subtract(TIME *result, TIME *x, TIME *y);
 void communication_time_eval(int sockfd);
-void function_time_eval(void (*operation)(int, char[1000]), int sockfd, char msg_buf[1000], char opcode[5]);
+void function_time_eval(void (*operation)(int, ADDRESS*, Message*), int sockfd, ADDRESS *their_addr, Message *msg);
 
 // ****************** MAIN CODE ****************** //
 
@@ -103,7 +112,7 @@ int main(int argc, char *argv[])
 	printf("Client: sending to %s\n", inet_ntoa(their_addr.sin_addr));
 	printf("-------------------------------------------------------\n");
 
-	login(sockfd);  // Inicia 'aplicacao'
+	login(sockfd, &their_addr);  // Inicia 'aplicacao'
 
 	close(sockfd);
 
@@ -114,23 +123,12 @@ int main(int argc, char *argv[])
 
 // ***************** [Server/Client] - Funcoes Basicas ***************** //
 
-// Get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
-{
-	if (sa->sa_family == AF_INET) {
-		return &(((struct sockaddr_in*)sa)->sin_addr);
-	}
-
-	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
-
 // Previne inputs invalidos
 void get_input(char *input, size_t maxlen)
 {
 	fgets(input, maxlen, stdin);
 	input[strcspn(input, "\r\n")] = 0;
 }
-
 
 //   					NOVA ESTRUTURA DO BUFFER (A PRINCIPIO)  //
 //   ***************************************************************************************************************
@@ -140,53 +138,45 @@ void get_input(char *input, size_t maxlen)
 
 // *********** WRITE AND READ SOCKET *********** //
 
-void write_buffer(int sockfd, char *msg)
+void write_buffer(int sockfd, ADDRESS *their_addr, Message *msg)
 {
-	int bytesleft, numbytes;
-	char header[6], *auxmsg;
-
-	bytesleft =  strlen(msg);
-	sprintf(header, "%d", bytesleft);
-
-	numbytes = send(sockfd, header, 6, 0);
-	if (numbytes < 0)
-	{
-		perror("\nERROR: Writing to socket didnt go well...\n");
-		exit(0);
-	}
-
-	auxmsg = msg;
-	do {
-		numbytes = send(sockfd, auxmsg, bytesleft, 0);
-
-		if (numbytes < 0)
-		{
-			perror("\nERROR: Writing to socket didnt go well...\n");
-			exit(0);
-		}
-
-		auxmsg += numbytes;  // Atualiza parte da mensagem que deve enviar
-		bytesleft -= numbytes;
-
-	} while(bytesleft > 0);
-}
-
-void read_buffer(int sockfd, struct sockaddr_in their_addr, char *msg)
-{
-	char header[6], *workbuffer;
 	int numbytes;
 	char buf[MAXBUFLEN];
 	socklen_t addr_len;
 
+	addr_len = sizeof(struct sockaddr);
+
+	strcat(buf, msg->usercode);
+	strcat(buf, msg->opcode);
+	strcat(buf, msg->search_code);
+	strcat(buf, msg->comment);
+
+	numbytes = sendto(sockfd, buf, strlen(buf), 0, (struct sockaddr *)their_addr, addr_len);
+
+	if (numbytes == -1)
+	{
+		perror("\nERROR: Writing datagram didnt go well...\n");
+		exit(0);
+	}
+}
+
+void read_buffer(int sockfd, ADDRESS *their_addr, char *msg)
+{
+	int numbytes;
+	char buf[MAXBUFLEN];
+	socklen_t addr_len;
 
 	addr_len = sizeof(struct sockaddr);
-	if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN-1 , 0, (struct sockaddr *)&their_addr, &addr_len)) == -1)
+
+	numbytes = recvfrom(sockfd, buf, MAXBUFLEN-1 , 0, (struct sockaddr *)their_addr, &addr_len);
+
+	if (numbytes == -1)
 	{
-			perror("recvfrom");
+			perror("ERROR: Receiving datagram");
 			exit(1);
 	}
 
-	printf("got packet from %s\n", inet_ntoa(their_addr.sin_addr));
+	printf("got packet from %s\n", inet_ntoa(their_addr->sin_addr));
 	printf("packet is %d bytes long\n",numbytes);
 	buf[numbytes] = '\0';
 	printf("packet contains \"%s\"\n",buf);
@@ -199,10 +189,10 @@ void read_buffer(int sockfd, struct sockaddr_in their_addr, char *msg)
 // *********** Interfaces *********** //
 
 // Realiza login no servidor.
-void login(int sockfd)
+void login(int sockfd, ADDRESS *their_addr)
 {
 	int login;
-	char input[5];
+	Message msg;
 
 	printf("\n********************************************************\n");
 	printf("\t BEM VINDO AO BANCO DE DISCIPLINAS!!\n");
@@ -212,20 +202,19 @@ void login(int sockfd)
 		print_tela_inicial();
 		printf("Selecione uma opcao:\n");
 
-		get_input(input, sizeof(input));
-		login = atoi(input);
-		write_buffer(sockfd, input);  // Envia codigo do login
+		get_input(msg.usercode, sizeof(msg.usercode));
 
+		login = atoi(msg.usercode);
 		switch(login)
 		{
 			case 1: // Professor
-				professor(sockfd, input);
+				professor(sockfd, their_addr, &msg);
 				break;
 			case 2: // Aluno
-				aluno(sockfd, input);
+				aluno(sockfd, their_addr, &msg);
 				break;
 			case 0: // Exit
-				printf("\nFechando conexao.\n");
+				printf("\nEncerrando login.\n");
 				break;
 			default:
 				printf("\nOperacao Inval¡da.\n");
@@ -233,47 +222,40 @@ void login(int sockfd)
 	} while(login);
 }
 
-void professor(int sockfd, char *usercode)
+void professor(int sockfd, ADDRESS *their_addr, Message *msg)
 {
 	int choice;
-	char msg_buf[1000], opcode[5];
 
 	printf("\n-------------------------------------------------------\n");
 	printf("\n\t\t*** Bem Vindo Professor! ***\n");
 
-
 	do {
-		strcpy(msg_buf, usercode);
-
 		print_ops_professor();
 
 		printf("Selecione uma operacao:\n");
 
-		get_input(opcode, sizeof(opcode));
+		get_input(msg->opcode, sizeof(msg->opcode));
 
-		strcat(msg_buf, opcode);
-
-		choice = atoi(opcode);
-
+		choice = atoi(msg->opcode);
 		switch (choice)
 		{
 			case 1:
-				function_time_eval(list_codes, sockfd, msg_buf, opcode);
+				function_time_eval(list_codes, sockfd, their_addr, msg);
 				break;
 			case 2:
-				function_time_eval(get_ementa, sockfd, msg_buf, opcode);
+				function_time_eval(get_ementa, sockfd, their_addr, msg);
 				break;
 			case 3:
-				function_time_eval(get_comment, sockfd, msg_buf, opcode);
+				function_time_eval(get_comment, sockfd, their_addr, msg);
 				break;
 			case 4:
-				function_time_eval(get_full_info, sockfd, msg_buf, opcode);
+				function_time_eval(get_full_info, sockfd, their_addr, msg);
 				break;
 			case 5:
-				function_time_eval(get_all_info, sockfd, msg_buf, opcode);
+				function_time_eval(get_all_info, sockfd, their_addr, msg);
 				break;
 			case 6:
-				function_time_eval(write_comment, sockfd, msg_buf, opcode);
+				function_time_eval(write_comment, sockfd, their_addr, msg);
 				break;
 			case 0:
 					printf("\nProfessor logging out...\n");
@@ -284,42 +266,37 @@ void professor(int sockfd, char *usercode)
 	} while(choice);
 }
 
-void aluno(int sockfd, char *usercode)
+void aluno(int sockfd, ADDRESS *their_addr, Message *msg)
 {
 	int choice;
-	char msg_buf[1000], opcode[6];
 
 	printf("\n-------------------------------------------------------\n");
 	printf("\n\t\t*** Bem Vindo Aluno! ***\n");
 
 	do {
-		strcpy(msg_buf, usercode);
-
 		print_ops_aluno();
 
 		printf("Selecione uma operacao:\n");
-		get_input(opcode, sizeof(opcode));
+		get_input(msg->opcode, sizeof(msg->opcode));
 
-		strcat(msg_buf, opcode);
-
-		choice = atoi(opcode);
+		choice = atoi(msg->opcode);
 
 		switch (choice)
 		{
 			case 1:
-				function_time_eval(list_codes, sockfd, msg_buf, opcode);
+				function_time_eval(list_codes, sockfd, their_addr, msg);
 				break;
 			case 2:
-				function_time_eval(get_ementa, sockfd, msg_buf, opcode);
+				function_time_eval(get_ementa, sockfd, their_addr, msg);
 				break;
 			case 3:
-				function_time_eval(get_comment, sockfd, msg_buf, opcode);
+				function_time_eval(get_comment, sockfd, their_addr, msg);
 				break;
 			case 4:
-				function_time_eval(get_full_info, sockfd, msg_buf, opcode);
+				function_time_eval(get_full_info, sockfd, their_addr, msg);
 				break;
 			case 5:
-				function_time_eval(get_all_info, sockfd, msg_buf, opcode);
+				function_time_eval(get_all_info, sockfd, their_addr, msg);
 				break;
 			case 0:
 				printf("\nAluno logging out...\n");
@@ -333,74 +310,71 @@ void aluno(int sockfd, char *usercode)
 // *********** Operacoes de ALUNO e PROFESSOR *********** //
 
 // Listar todos os códigos de disciplinas com seus respectivos títulos;
-void list_codes(int sockfd, char *msg_buf)
+void list_codes(int sockfd, ADDRESS *their_addr, Message *msg)
 {
 	char result[2500];
 
 	// Envia OP Code
-	write_buffer(sockfd, msg_buf);
+	write_buffer(sockfd, their_addr, msg);
 
   printf("\n-------------------------------------------------------\n");
   printf(" 1 -> Listar codigos das disciplinas\n");
   printf("-------------------------------------------------------\n\n");
 
 	// Recebe Resultado
-	read_buffer(sockfd, result);
+	read_buffer(sockfd, their_addr, result);
 	printf("%s", result);
 	printf("********************************************************\n");
 }
 
 // Dado o código de uma disciplina, retornar a ementa;
-void get_ementa(int sockfd, char *msg_buf)
+void get_ementa(int sockfd, ADDRESS *their_addr, Message *msg)
 {
 	char result[2500];
-  char search_code[10];
 
   printf("\n-------------------------------------------------------\n");
   printf(" 2 -> Buscar ementa\n");
   printf("-------------------------------------------------------\n\n");
 
   printf("Digite o codigo da disciplina desejada:\n");
-	get_input(search_code, sizeof(search_code));
+	get_input(msg->search_code, sizeof(msg->search_code));
 
-	strcat(msg_buf, search_code);
+	// strcat(msg_buf, search_code);
 
-	write_buffer(sockfd, msg_buf);
+	write_buffer(sockfd, their_addr, msg);
 
 	printf("\n");
-	read_buffer(sockfd, result);
+	read_buffer(sockfd, their_addr, result);
 	printf("%s", result);
 	printf("********************************************************\n");
 }
 
 // Dado o código de uma disciplina, retornar o texto de comentário sobre a próxima aula.
-void get_comment(int sockfd, char *msg_buf)
+void get_comment(int sockfd, ADDRESS *their_addr, Message *msg)
 {
 	char result[2500];
-  char search_code[10];
 
   printf("\n-------------------------------------------------------\n");
   printf(" 3 -> Buscar comentario sobre a proxima aula\n");
   printf("-------------------------------------------------------\n\n");
 
   printf("Digite o codigo da disciplina desejada:\n");
-  get_input(search_code, sizeof(search_code));
+  get_input(msg->search_code, sizeof(msg->search_code));
 
-	strcat(msg_buf, search_code);
+	// strcat(msg, search_code);
 
-	write_buffer(sockfd, msg_buf);
+	write_buffer(sockfd, their_addr, msg);
 
 	printf("\n");
-	read_buffer(sockfd, result);
+	read_buffer(sockfd, their_addr, result);
 	printf("%s", result);
 	printf("********************************************************\n");
 }
 
 // Dado o código de uma disciplina, retornar todas as informações desta disciplina;
-void get_full_info(int sockfd, char *msg_buf)
+void get_full_info(int sockfd, ADDRESS *their_addr, Message *msg)
 {
-	char result[2500];
-  char search_code[10];
+	char result[3000];
 
   printf("\n-------------------------------------------------------\n");
   printf(" 4 -> Listar informacoes de uma disciplina\n");
@@ -408,31 +382,31 @@ void get_full_info(int sockfd, char *msg_buf)
 
   printf("Digite o codigo da disciplina desejada:\n");
 
-	get_input(search_code, sizeof(search_code));
+	get_input(msg->search_code, sizeof(msg->search_code));
 
-	strcat(msg_buf, search_code);
+	// strcat(msg_buf, search_code);
 
-	write_buffer(sockfd, msg_buf);
+	write_buffer(sockfd, their_addr, msg);
 
 	printf("\n");
-	read_buffer(sockfd, result);
+	read_buffer(sockfd, their_addr, result);
 	printf("%s", result);
 	printf("********************************************************\n");
 }
 
 // Listar todas as informações de todas as disciplinas
-void get_all_info(int sockfd, char *msg_buf)
+void get_all_info(int sockfd, ADDRESS *their_addr, Message *msg)
 {
-	char result[2500];
+	char result[3000];
 
 	// Envia OP Code
-	write_buffer(sockfd, msg_buf);
+	write_buffer(sockfd, their_addr, msg);
 
   printf("\n-------------------------------------------------------\n");
   printf(" 5 -> Listar informacoes de todas as disciplinas\n");
   printf("-------------------------------------------------------\n\n");
 
-	read_buffer(sockfd, result);
+	read_buffer(sockfd, their_addr, result);
 	printf("%s", result);
 	printf("********************************************************\n");
 }
@@ -440,9 +414,9 @@ void get_all_info(int sockfd, char *msg_buf)
 // *********** Operacoes do PROFESSOR *********** //
 
 // Escrever um texto de comentário sobre a próxima aula de uma disciplina (apenas usuário professor)
-void write_comment(int sockfd, char *msg_buf)
+void write_comment(int sockfd, ADDRESS *their_addr, Message *msg)
 {
-  char search_code[10], comment[500], response[6];
+  char response[6];
 	int result;
 
   printf("\n-------------------------------------------------------\n");
@@ -451,17 +425,17 @@ void write_comment(int sockfd, char *msg_buf)
 
   printf("Digite o codigo da disciplina desejada:\n");
 
-	get_input(search_code, sizeof(search_code));
-	strcat(msg_buf, search_code);
+	get_input(msg->search_code, sizeof(msg->search_code));
+	// strcat(msg_buf, search_code);
 
-  printf("\nDigite o comentario que deseja inserir em %s:\n", search_code);
+  printf("\nDigite o comentario que deseja inserir em %s:\n", msg->search_code);
 
-	get_input(comment, sizeof(comment));
-	strcat(msg_buf, comment);
+	get_input(msg->comment, sizeof(msg->comment));
+	// strcat(msg_buf, comment);
 
-	write_buffer(sockfd, msg_buf);
+	write_buffer(sockfd, their_addr, msg);
 
-	read_buffer(sockfd, response);
+	read_buffer(sockfd, their_addr, response);
 	result = atoi(response);
 	if(result)
 	{
@@ -549,12 +523,12 @@ int timeval_subtract(TIME *result, TIME *x, TIME *y)
   return result->tv_sec < 0;
 }
 
-void function_time_eval(void (*operation)(int, char[1000]), int sockfd, char msg_buf[1000], char opcode[5])
+void function_time_eval(void (*operation)(int, ADDRESS*, Message*), int sockfd, ADDRESS *their_addr, Message *msg)
 {
 	TIME before, after, diff;
 	char filename[50] = "time_log/client_operation_";
 
-	strcat(filename, opcode);
+	strcat(filename, msg->opcode);
 	strcat(filename, ".txt");
 
 	FILE *f = fopen(filename, "a");
@@ -565,7 +539,7 @@ void function_time_eval(void (*operation)(int, char[1000]), int sockfd, char msg
 	}
 
 	gettimeofday(&before, NULL);
-	(*operation)(sockfd, msg_buf);
+	(*operation)(sockfd, their_addr, msg);
 	gettimeofday(&after, NULL);
 
 	if(!timeval_subtract(&diff, &after, &before))
