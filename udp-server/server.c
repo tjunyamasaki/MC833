@@ -31,10 +31,10 @@ typedef struct sockaddr_in ADDRESS;
 // Esrutura do datagrama recebido
 typedef struct parameters
 {
-	char usercode[6];
-	char opcode[6];
-	char search_code[11];
-	char comment[501];  	// teste considerando tam enviado + '/0'
+	char usercode[3];
+	char opcode[3];
+	char search_code[7];
+	char comment[500];  	// teste considerando tam enviado + '/0'
 } Message;
 
 #define PORT 8000  // Porta a qual o cliente se conecta
@@ -116,6 +116,8 @@ int main(void)
 
 		received = read_buffer(sockfd, &their_addr, &msg);  // Mensagem vinda do Client.
 
+		// printf("%s\n", msg.usercode);
+
 		gettimeofday(&start_time, NULL);
 		user = atoi(msg.usercode);
 
@@ -186,13 +188,13 @@ int read_buffer(int sockfd, ADDRESS *their_addr, Message *msg)
 	printf("packet contains \"%s\"\n",buf);
 	// ***
 
-	strncpy(msg->usercode, buf, 5);
-	msg->usercode[5] = '\0';
-	strncpy(msg->opcode, buf+6, 5);
-	msg->opcode[5] = '\0';
-	strncpy(msg->search_code, buf+12, 10);
-	msg->search_code[10] = '\0';
-	strncpy(msg->comment, buf+23, 500);
+	strncpy(msg->usercode, buf, 1);
+	msg->usercode[1] = '\0';
+	strncpy(msg->opcode, buf+1, 1);
+	msg->opcode[1] = '\0';
+	strncpy(msg->search_code, buf+2, 5);
+	msg->search_code[5] = '\0';
+	strncpy(msg->comment, buf+7, 500);
 	msg->comment[500] = '\0';
 
 	return 1;

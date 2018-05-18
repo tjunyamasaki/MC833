@@ -28,9 +28,9 @@ typedef struct sockaddr_in ADDRESS;
 // Esrutura do datagrama recebido
 typedef struct parameters
 {
-	char usercode[5];
-	char opcode[5];
-	char search_code[10];
+	char usercode[3];
+	char opcode[3];
+	char search_code[7];
 	char comment[500];
 } Message;
 
@@ -176,10 +176,10 @@ void read_buffer(int sockfd, ADDRESS *their_addr, char *msg)
 			exit(1);
 	}
 
-	printf("got packet from %s\n", inet_ntoa(their_addr->sin_addr));
-	printf("packet is %d bytes long\n",numbytes);
+	// printf("got packet from %s\n", inet_ntoa(their_addr->sin_addr));
+	// printf("packet is %d bytes long\n",numbytes);
 	buf[numbytes] = '\0';
-	printf("packet contains \"%s\"\n",buf);
+	// printf("packet contains \n\n %s \n",buf);
 
 	strncpy(msg, buf, numbytes+1);  // Copia apenas msg que deveria ser recebida
 }
@@ -229,41 +229,39 @@ void professor(int sockfd, ADDRESS *their_addr, Message *msg)
 	printf("\n-------------------------------------------------------\n");
 	printf("\n\t\t*** Bem Vindo Professor! ***\n");
 
-	do {
-		print_ops_professor();
+	print_ops_professor();
 
-		printf("Selecione uma operacao:\n");
+	printf("Selecione uma operacao:\n");
 
-		get_input(msg->opcode, sizeof(msg->opcode));
+	get_input(msg->opcode, sizeof(msg->opcode));
 
-		choice = atoi(msg->opcode);
-		switch (choice)
-		{
-			case 1:
-				function_time_eval(list_codes, sockfd, their_addr, msg);
+	choice = atoi(msg->opcode);
+	switch (choice)
+	{
+		case 1:
+			function_time_eval(list_codes, sockfd, their_addr, msg);
+			break;
+		case 2:
+			function_time_eval(get_ementa, sockfd, their_addr, msg);
+			break;
+		case 3:
+			function_time_eval(get_comment, sockfd, their_addr, msg);
+			break;
+		case 4:
+			function_time_eval(get_full_info, sockfd, their_addr, msg);
+			break;
+		case 5:
+			function_time_eval(get_all_info, sockfd, their_addr, msg);
+			break;
+		case 6:
+			function_time_eval(write_comment, sockfd, their_addr, msg);
+			break;
+		case 0:
+				printf("\nProfessor logging out...\n");
 				break;
-			case 2:
-				function_time_eval(get_ementa, sockfd, their_addr, msg);
-				break;
-			case 3:
-				function_time_eval(get_comment, sockfd, their_addr, msg);
-				break;
-			case 4:
-				function_time_eval(get_full_info, sockfd, their_addr, msg);
-				break;
-			case 5:
-				function_time_eval(get_all_info, sockfd, their_addr, msg);
-				break;
-			case 6:
-				function_time_eval(write_comment, sockfd, their_addr, msg);
-				break;
-			case 0:
-					printf("\nProfessor logging out...\n");
-					break;
-			default:
-				printf("\nInvalid Op Code!\n");
-			}
-	} while(choice);
+		default:
+			printf("\nInvalid Op Code!\n");
+		}
 }
 
 void aluno(int sockfd, ADDRESS *their_addr, Message *msg)
@@ -273,38 +271,36 @@ void aluno(int sockfd, ADDRESS *their_addr, Message *msg)
 	printf("\n-------------------------------------------------------\n");
 	printf("\n\t\t*** Bem Vindo Aluno! ***\n");
 
-	do {
-		print_ops_aluno();
+	print_ops_aluno();
 
-		printf("Selecione uma operacao:\n");
-		get_input(msg->opcode, sizeof(msg->opcode));
+	printf("Selecione uma operacao:\n");
+	get_input(msg->opcode, sizeof(msg->opcode));
 
-		choice = atoi(msg->opcode);
+	choice = atoi(msg->opcode);
 
-		switch (choice)
-		{
-			case 1:
-				function_time_eval(list_codes, sockfd, their_addr, msg);
-				break;
-			case 2:
-				function_time_eval(get_ementa, sockfd, their_addr, msg);
-				break;
-			case 3:
-				function_time_eval(get_comment, sockfd, their_addr, msg);
-				break;
-			case 4:
-				function_time_eval(get_full_info, sockfd, their_addr, msg);
-				break;
-			case 5:
-				function_time_eval(get_all_info, sockfd, their_addr, msg);
-				break;
-			case 0:
-				printf("\nAluno logging out...\n");
-				break;
-			default:
-				printf("\nInvalid Op Code.\n");
-		}
-	} while(choice);
+	switch (choice)
+	{
+		case 1:
+			function_time_eval(list_codes, sockfd, their_addr, msg);
+			break;
+		case 2:
+			function_time_eval(get_ementa, sockfd, their_addr, msg);
+			break;
+		case 3:
+			function_time_eval(get_comment, sockfd, their_addr, msg);
+			break;
+		case 4:
+			function_time_eval(get_full_info, sockfd, their_addr, msg);
+			break;
+		case 5:
+			function_time_eval(get_all_info, sockfd, their_addr, msg);
+			break;
+		case 0:
+			printf("\nAluno logging out...\n");
+			break;
+		default:
+			printf("\nInvalid Op Code.\n");
+	}
 }
 
 // *********** Operacoes de ALUNO e PROFESSOR *********** //
