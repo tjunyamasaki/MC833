@@ -53,8 +53,8 @@ void read_buffer(int sockfd, ADDRESS *their_addr, char *msg);
 void login(int sockfd, ADDRESS *their_addr);
 
 // Interfaces do aluno e professor
-void professor(int sockfd, ADDRESS *their_addr, Message *msg);
-void aluno(int sockfd, ADDRESS *their_addr, Message *msg);
+void professor(int sockfd, ADDRESS *their_addr);
+void aluno(int sockfd, ADDRESS *their_addr);
 
 // Operacoes dos alunos/professores
 void list_codes(int sockfd, ADDRESS *their_addr, Message *msg);
@@ -141,12 +141,12 @@ void get_input(char *input, size_t maxlen)
 void write_buffer(int sockfd, ADDRESS *their_addr, Message *msg)
 {
 	int numbytes;
-	char buf[MAXBUFLEN];
+	char *buf;
 	socklen_t addr_len;
 
-	addr_len = sizeof(struct sockaddr);
+	buf = calloc(MAXBUFLEN, sizeof(char));
 
-	memset(buf,0,strlen(buf));
+	addr_len = sizeof(struct sockaddr);
 
 	printf("BUFFER: %s\n", buf);
 	printf("msg usercode: %s\n", msg->usercode);
@@ -171,12 +171,14 @@ void write_buffer(int sockfd, ADDRESS *their_addr, Message *msg)
 void read_buffer(int sockfd, ADDRESS *their_addr, char *msg)
 {
 	int numbytes;
-	char buf[MAXBUFLEN];
+	char *buf;
 	socklen_t addr_len;
+
+	buf = calloc(MAXDATASIZE, sizeof(char));
 
 	addr_len = sizeof(struct sockaddr);
 
-	numbytes = recvfrom(sockfd, buf, MAXBUFLEN-1 , 0, (struct sockaddr *)their_addr, &addr_len);
+	numbytes = recvfrom(sockfd, buf, MAXDATASIZE-1 , 0, (struct sockaddr *)their_addr, &addr_len);
 
 	if (numbytes == -1)
 	{
@@ -190,6 +192,8 @@ void read_buffer(int sockfd, ADDRESS *their_addr, char *msg)
 	// printf("packet contains \n\n %s \n",buf);
 
 	strncpy(msg, buf, numbytes+1);  // Copia apenas msg que deveria ser recebida
+
+	free(buf);
 }
 
 // ******************* Funcoes relacionadas ao projeto ******************** //
@@ -200,7 +204,7 @@ void read_buffer(int sockfd, ADDRESS *their_addr, char *msg)
 void login(int sockfd, ADDRESS *their_addr)
 {
 	int login;
-	Message msg;
+	char usercode[3];
 
 	printf("\n********************************************************\n");
 	printf("\t BEM VINDO AO BANCO DE DISCIPLINAS!!\n");
@@ -211,21 +215,23 @@ void login(int sockfd, ADDRESS *their_addr)
 		printf("Selecione uma opcao:\n");
 
 		//Limpar campos
-		memset(msg.usercode,0,strlen(msg.usercode));
-		memset(msg.search_code,0,strlen(msg.search_code));
-		memset(msg.opcode,0,strlen(msg.opcode));
-		memset(msg.comment,0,strlen(msg.comment));
+		// memset(msg.usercode,0,strlen(msg.usercode));
+		// memset(msg.search_code,0,strlen(msg.search_code));
+		// memset(msg.opcode,0,strlen(msg.opcode));
+		// memset(msg.comment,0,strlen(msg.comment));
 
-		get_input(msg.usercode, sizeof(msg.usercode));
+		// get_input(msg.usercode, sizeof(msg.usercode));
 
-		login = atoi(msg.usercode);
+		get_input(usercode, sizeof(usercode));
+
+		login = atoi(usercode);
 		switch(login)
 		{
 			case 1: // Professor
-				professor(sockfd, their_addr, &msg);
+				professor(sockfd, their_addr);
 				break;
 			case 2: // Aluno
-				aluno(sockfd, their_addr, &msg);
+				aluno(sockfd, their_addr);
 				break;
 			case 0: // Exit
 				printf("\nEncerrando login.\n");
@@ -236,9 +242,14 @@ void login(int sockfd, ADDRESS *their_addr)
 	} while(login);
 }
 
-void professor(int sockfd, ADDRESS *their_addr, Message *msg)
+void professor(int sockfd, ADDRESS *their_addr)
 {
 	int choice;
+	Message *msg;
+
+	msg = calloc(1, sizeof(Message));
+
+	strcpy(msg->usercode, "2");
 
 	printf("\n-------------------------------------------------------\n");
 	printf("\n\t\t*** Bem Vindo Professor! ***\n");
@@ -276,11 +287,17 @@ void professor(int sockfd, ADDRESS *their_addr, Message *msg)
 		default:
 			printf("\nInvalid Op Code!\n");
 		}
+		free(msg);
 }
 
-void aluno(int sockfd, ADDRESS *their_addr, Message *msg)
+void aluno(int sockfd, ADDRESS *their_addr)
 {
 	int choice;
+	Message *msg;
+
+	msg = calloc(1, sizeof(Message));
+
+	strcpy(msg->usercode, "2");
 
 	printf("\n-------------------------------------------------------\n");
 	printf("\n\t\t*** Bem Vindo Aluno! ***\n");
@@ -315,6 +332,7 @@ void aluno(int sockfd, ADDRESS *their_addr, Message *msg)
 		default:
 			printf("\nInvalid Op Code.\n");
 	}
+	free(msg);
 }
 
 // *********** Operacoes de ALUNO e PROFESSOR *********** //
@@ -322,7 +340,7 @@ void aluno(int sockfd, ADDRESS *their_addr, Message *msg)
 // Listar todos os códigos de disciplinas com seus respectivos títulos;
 void list_codes(int sockfd, ADDRESS *their_addr, Message *msg)
 {
-	char result[2500];
+	char result[3000];
 
 	// Envia OP Code
 	write_buffer(sockfd, their_addr, msg);
@@ -340,7 +358,7 @@ void list_codes(int sockfd, ADDRESS *their_addr, Message *msg)
 // Dado o código de uma disciplina, retornar a ementa;
 void get_ementa(int sockfd, ADDRESS *their_addr, Message *msg)
 {
-	char result[2500];
+	char result[3000];
 
   printf("\n-------------------------------------------------------\n");
   printf(" 2 -> Buscar ementa\n");

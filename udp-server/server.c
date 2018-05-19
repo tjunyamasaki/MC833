@@ -38,10 +38,7 @@ typedef struct parameters
 } Message;
 
 #define PORT 8000  // Porta a qual o cliente se conecta
-#define BACKLOG 10	 // Maximo de conexoes pendentes que a fila ira segurar
 #define MAXBUFLEN 520 // Numero maximo de bytes que sao enviados em um pacote
-
-
 
 // ************** [Client/Server] - Basic functions ************** //
 
@@ -49,6 +46,7 @@ void sigchld_handler(int s); // Get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa);
 void write_buffer(int sockfd, ADDRESS *their_addr, char *msg);
 int read_buffer(int sockfd, ADDRESS *their_addr, Message *msg);
+
 
 // ****************** [MYSQL] ************************** //
 
@@ -168,8 +166,10 @@ void write_buffer(int sockfd, ADDRESS *their_addr, char *msg)
 int read_buffer(int sockfd, ADDRESS *their_addr, Message *msg)
 {
 	int numbytes;
-	char buf[MAXBUFLEN];
+	char *buf;
 	socklen_t addr_len;
+
+	buf = calloc(MAXBUFLEN, sizeof(char));
 
 	addr_len = sizeof(struct sockaddr);
 
@@ -197,6 +197,8 @@ int read_buffer(int sockfd, ADDRESS *their_addr, Message *msg)
 	strncpy(msg->comment, buf+7, 500);
 	msg->comment[500] = '\0';
 
+	free(buf);
+	
 	return 1;
 }
 
