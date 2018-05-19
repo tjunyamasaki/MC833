@@ -146,6 +146,14 @@ void write_buffer(int sockfd, ADDRESS *their_addr, Message *msg)
 
 	addr_len = sizeof(struct sockaddr);
 
+	memset(buf,0,strlen(buf));
+
+	printf("BUFFER: %s\n", buf);
+	printf("msg usercode: %s\n", msg->usercode);
+	printf("msg opcode: %s\n", msg->opcode);
+	printf("msg search_code: %s\n", msg->search_code);
+	printf("msg comment: %s\n", msg->comment);
+
 	strcat(buf, msg->usercode);
 	strcat(buf, msg->opcode);
 	strcat(buf, msg->search_code);
@@ -201,6 +209,12 @@ void login(int sockfd, ADDRESS *their_addr)
 	do {
 		print_tela_inicial();
 		printf("Selecione uma opcao:\n");
+
+		//Limpar campos
+		memset(msg.usercode,0,strlen(msg.usercode));
+		memset(msg.search_code,0,strlen(msg.search_code));
+		memset(msg.opcode,0,strlen(msg.opcode));
+		memset(msg.comment,0,strlen(msg.comment));
 
 		get_input(msg.usercode, sizeof(msg.usercode));
 
