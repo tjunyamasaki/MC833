@@ -173,13 +173,6 @@ int read_buffer(int sockfd, ADDRESS *their_addr, Message *msg)
 			exit(1);
 	}
 
-	// TEST SAMPLE
-	printf("got packet from %s\n", inet_ntoa(their_addr->sin_addr));
-	printf("packet is %d bytes long\n",numbytes);
-	buf[numbytes] = '\0';
-	printf("packet contains \"%s\"\n",buf);
-	// ***
-
 	strncpy(msg->usercode, buf, 1);
 	msg->usercode[1] = '\0';
 	strncpy(msg->opcode, buf+1, 1);

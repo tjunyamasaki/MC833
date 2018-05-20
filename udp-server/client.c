@@ -135,12 +135,6 @@ void write_buffer(int sockfd, ADDRESS *their_addr, Message *msg)
 
 	addr_len = sizeof(struct sockaddr);
 
-	printf("BUFFER: %s\n", buf);
-	printf("msg usercode: %s\n", msg->usercode);
-	printf("msg opcode: %s\n", msg->opcode);
-	printf("msg search_code: %s\n", msg->search_code);
-	printf("msg comment: %s\n", msg->comment);
-
 	strcat(buf, msg->usercode);
 	strcat(buf, msg->opcode);
 	strcat(buf, msg->search_code);

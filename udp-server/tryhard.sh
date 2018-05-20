@@ -8,9 +8,9 @@ while [[ -h "$SOURCE" ]]; do # resolve $SOURCE until the file is no longer a sym
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-
-while [ true ]; do
-  ( flock -n 9 || exit 1
-  $DIR/client rabbitnode.stream < $DIR/test-inputs/testcase.in
-  ) 9> /dev/null
+for i in {1..1000}
+do
+    sed "s#{NUM}#$i#;" $DIR/test-inputs/testcase.in > $DIR/test-inputs/testcase-tmp.in
+    $DIR/client localhost < $DIR/test-inputs/testcase-tmp.in
+    rm $DIR/test-inputs/testcase-tmp.in
 done
