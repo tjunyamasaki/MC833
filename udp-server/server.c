@@ -1,12 +1,3 @@
-/*
-**	Header - Basic server in C with MYSQL Databse integration
-**
-**
-**
-**
-**
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -34,11 +25,11 @@ typedef struct parameters
 	char usercode[3];
 	char opcode[3];
 	char search_code[7];
-	char comment[500];  	// teste considerando tam enviado + '/0'
+	char comment[500];
 } Message;
 
 #define PORT 8000  // Porta a qual o cliente se conecta
-#define MAXBUFLEN 520 // Numero maximo de bytes que sao enviados em um pacote
+#define MAXBUFLEN 513 // Numero maximo de bytes que sao recebidos em um pacote
 
 // ************** [Client/Server] - Basic functions ************** //
 
@@ -107,17 +98,17 @@ int main(void)
 	while(1)
 	{
 		int user, received;
-		Message msg;
+		Message *msg;
 		TIME start_time;
 
 		printf("\n-> Waiting for message...\n");
 
-		received = read_buffer(sockfd, &their_addr, &msg);  // Mensagem vinda do Client.
+		msg = calloc(1, sizeof(Message));
 
-		// printf("%s\n", msg.usercode);
+		received = read_buffer(sockfd, &their_addr, msg);  // Mensagem vinda do Client.
 
 		gettimeofday(&start_time, NULL);
-		user = atoi(msg.usercode);
+		user = atoi(msg->usercode);
 
 		if(received)
 		{
@@ -126,15 +117,16 @@ int main(void)
 			switch(user)
 			{
 				case 1:
-					professor(sockfd, &their_addr, start_time, &msg);
+					professor(sockfd, &their_addr, start_time, msg);
 					break;
 				case 2:
-					aluno(sockfd, &their_addr, start_time, &msg);
+					aluno(sockfd, &their_addr, start_time, msg);
 					break;
 				default:
 					printf("\nUnexpected login option.\n");
 			}
 		}
+		free(msg);
 	}
 	close(sockfd);
 
@@ -198,7 +190,7 @@ int read_buffer(int sockfd, ADDRESS *their_addr, Message *msg)
 	msg->comment[500] = '\0';
 
 	free(buf);
-	
+
 	return 1;
 }
 

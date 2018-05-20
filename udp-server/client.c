@@ -1,12 +1,3 @@
-/*
-**	Header - Basic server in C with MYSQL Databse integration
-**
-**
-**
-**
-**
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -35,8 +26,8 @@ typedef struct parameters
 } Message;
 
 #define SERVERPORT 8000 // Porta a qual o cliente se conecta
-#define MAXDATASIZE 3000 // Numero maximo de bytes que sao recebidos em um pacote
-#define MAXBUFLEN 520
+#define MAXDATASIZE 3000  // Tamanho maximo para mensagem recebida
+#define MAXBUFLEN 513 // Numero maximo de bytes que sao enviados em um pacote
 
 // ************** [Client/Server] - Basic functions ************** //
 
@@ -108,10 +99,6 @@ int main(int argc, char *argv[])
 	their_addr.sin_addr = *((struct in_addr *)he->h_addr);
 	memset(&(their_addr.sin_zero), '\0', 8);  // Zero the rest of the struct
 
-	printf("\n-------------------------------------------------------\n");
-	printf("Client: sending to %s\n", inet_ntoa(their_addr.sin_addr));
-	printf("-------------------------------------------------------\n");
-
 	login(sockfd, &their_addr);  // Inicia 'aplicacao'
 
 	close(sockfd);
@@ -132,7 +119,7 @@ void get_input(char *input, size_t maxlen)
 
 //   					NOVA ESTRUTURA DO BUFFER (A PRINCIPIO)  //
 //   ***************************************************************************************************************
-//   * 6 bytes header  *  2 bytes usercode *  2 bytes opcode   *  8 bytes codigo busca    *   200 bytes comentario *
+//   * 3 bytes usercode *  3 bytes opcode   *  7 bytes codigo busca    *   500 bytes comentario *
 //   ***************************************************************************************************************
 
 
@@ -186,10 +173,7 @@ void read_buffer(int sockfd, ADDRESS *their_addr, char *msg)
 			exit(1);
 	}
 
-	// printf("got packet from %s\n", inet_ntoa(their_addr->sin_addr));
-	// printf("packet is %d bytes long\n",numbytes);
 	buf[numbytes] = '\0';
-	// printf("packet contains \n\n %s \n",buf);
 
 	strncpy(msg, buf, numbytes+1);  // Copia apenas msg que deveria ser recebida
 
@@ -249,7 +233,7 @@ void professor(int sockfd, ADDRESS *their_addr)
 
 	msg = calloc(1, sizeof(Message));
 
-	strcpy(msg->usercode, "2");
+	strcpy(msg->usercode, "1");
 
 	printf("\n-------------------------------------------------------\n");
 	printf("\n\t\t*** Bem Vindo Professor! ***\n");
@@ -285,7 +269,7 @@ void professor(int sockfd, ADDRESS *their_addr)
 				printf("\nProfessor logging out...\n");
 				break;
 		default:
-			printf("\nInvalid Op Code!\n");
+			printf("\nOpcao invalida.\n");
 		}
 		free(msg);
 }
@@ -330,7 +314,7 @@ void aluno(int sockfd, ADDRESS *their_addr)
 			printf("\nAluno logging out...\n");
 			break;
 		default:
-			printf("\nInvalid Op Code.\n");
+			printf("\nOpcao invalida.\n");
 	}
 	free(msg);
 }
@@ -365,11 +349,19 @@ void get_ementa(int sockfd, ADDRESS *their_addr, Message *msg)
   printf("-------------------------------------------------------\n\n");
 
   printf("Digite o codigo da disciplina desejada:\n");
+
 	get_input(msg->search_code, sizeof(msg->search_code));
 
-	// strcat(msg_buf, search_code);
-
-	write_buffer(sockfd, their_addr, msg);
+	if(strlen(msg->search_code) == 5)
+	{
+		write_buffer(sockfd, their_addr, msg);
+	}
+	else
+	{
+		printf("\nCódigo de busca invalido.\n");
+		while (getchar() != '\n') { }  // Tira lixo do buffer
+		return;
+	}
 
 	printf("\n");
 	read_buffer(sockfd, their_addr, result);
@@ -380,18 +372,28 @@ void get_ementa(int sockfd, ADDRESS *their_addr, Message *msg)
 // Dado o código de uma disciplina, retornar o texto de comentário sobre a próxima aula.
 void get_comment(int sockfd, ADDRESS *their_addr, Message *msg)
 {
-	char result[2500];
+	char result[3000];
 
   printf("\n-------------------------------------------------------\n");
   printf(" 3 -> Buscar comentario sobre a proxima aula\n");
   printf("-------------------------------------------------------\n\n");
 
   printf("Digite o codigo da disciplina desejada:\n");
-  get_input(msg->search_code, sizeof(msg->search_code));
 
-	// strcat(msg, search_code);
+	printf("sizeof: %d\n", (int) sizeof(msg->search_code));
 
-	write_buffer(sockfd, their_addr, msg);
+	get_input(msg->search_code, sizeof(msg->search_code));
+
+	if(strlen(msg->search_code) == 5)
+	{
+		write_buffer(sockfd, their_addr, msg);
+	}
+	else
+	{
+		printf("\nCódigo de busca invalido.\n");
+		while (getchar() != '\n') { }  // Tira lixo do buffer
+		return;
+	}
 
 	printf("\n");
 	read_buffer(sockfd, their_addr, result);
@@ -412,9 +414,16 @@ void get_full_info(int sockfd, ADDRESS *their_addr, Message *msg)
 
 	get_input(msg->search_code, sizeof(msg->search_code));
 
-	// strcat(msg_buf, search_code);
-
-	write_buffer(sockfd, their_addr, msg);
+	if(strlen(msg->search_code) <= 5)
+	{
+		write_buffer(sockfd, their_addr, msg);
+	}
+	else
+	{
+		printf("\nCódigo de busca invalido.\n");
+		while (getchar() != '\n') { }  // Tira lixo do buffer
+		return;
+	}
 
 	printf("\n");
 	read_buffer(sockfd, their_addr, result);
@@ -454,14 +463,21 @@ void write_comment(int sockfd, ADDRESS *their_addr, Message *msg)
   printf("Digite o codigo da disciplina desejada:\n");
 
 	get_input(msg->search_code, sizeof(msg->search_code));
-	// strcat(msg_buf, search_code);
 
-  printf("\nDigite o comentario que deseja inserir em %s:\n", msg->search_code);
+	if(strlen(msg->search_code) == 5)
+	{
+		printf("\nDigite o comentario que deseja inserir em %s:\n", msg->search_code);
 
-	get_input(msg->comment, sizeof(msg->comment));
-	// strcat(msg_buf, comment);
+		get_input(msg->comment, sizeof(msg->comment));
 
-	write_buffer(sockfd, their_addr, msg);
+		write_buffer(sockfd, their_addr, msg);
+	}
+	else
+	{
+		printf("\nCódigo de busca invalido.\n");
+		while (getchar() != '\n') { }  // Tira lixo do buffer
+		return;
+	}
 
 	read_buffer(sockfd, their_addr, response);
 	result = atoi(response);
@@ -482,11 +498,11 @@ void write_comment(int sockfd, ADDRESS *their_addr, Message *msg)
 void print_tela_inicial()
 {
 	printf("\n-------------------------------------------------------\n");
-	printf("Opçoes de login disponiveis:\n");
+	printf("Usuarios disponiveis:\n");
 	printf("-------------------------------------------------------\n\n");
 
-	printf("1. Login Professor\n");
-	printf("2. Login Aluno\n");
+	printf("1. Professor\n");
+	printf("2. Aluno\n");
 	printf("0. Exit\n");
 	printf("\n-------------------------------------------------------\n\n");
 }
