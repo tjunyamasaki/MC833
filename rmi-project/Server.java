@@ -173,6 +173,7 @@ public class Server extends UnicastRemoteObject implements BancoDisciplinas {
     // Inicia Server
     public static void main(String args[]) {
 
+        System.setProperty("java.security.policy","file:/Users/marcioivan/Dropbox/7ºSemestre/MC833/Projetos/rmi-project/security.policy");
         if (System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());
         }
@@ -183,7 +184,7 @@ public class Server extends UnicastRemoteObject implements BancoDisciplinas {
 
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.getRegistry(1099);
-            registry.bind("BancoDisciplinas", stub);
+            registry.rebind("BancoDisciplinas", stub);
 
             System.err.println("Server ready");
         } catch (Exception e) {

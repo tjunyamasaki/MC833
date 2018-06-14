@@ -1,0 +1,3 @@
+grant codeBase "file:/Users/marcioivan/Dropbox/7ºSemestre/MC833/Projetos/rmi-project/-" {
+    permission java.security.AllPermission;
+};
