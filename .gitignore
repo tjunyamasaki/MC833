@@ -36,17 +36,21 @@ ehthumbs.db
 Thumbs.db
 
 tcp-server/melhorpasta/client
-
 tcp-server/melhorpasta/server
-
 tcp-server/server
-
 tcp-server/client
 
 udp-server/server
-
 udp-server/client
 
 db/db_server
-
 db/db_server_local
+
+RemoteSystemsTempFiles
+.metadata
+.classpath
+
+rmi-project/RemoteSystemsTempFiles
+rmi-project/.metadata
+rmi-project/.classpath
+rmi-project/.project
