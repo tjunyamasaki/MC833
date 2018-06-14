@@ -3,21 +3,21 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Scanner;
-        
+
 public class Server implements Hello {
-        
+
     public Server() {}
 
     public String sayHello() {
         return "Hello, world!";
     }
-    
-    public String saudarMarcio(int n) {    	
+
+    public String saudarMarcio(int n) {
     	return ("Hoje teremos que saudar o Marcio " + n + " vezes");
     }
-        
+
     public static void main(String args[]) {
-        
+
         try {
             Server obj = new Server();
             Hello stub = (Hello) UnicastRemoteObject.exportObject(obj, 0);
