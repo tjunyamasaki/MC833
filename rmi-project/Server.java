@@ -2,172 +2,337 @@ import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Scanner;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-public class Server extends UnicastRemoteObject implements BancoDisciplinas {
+import java.io.*;
 
-    private Connection con;
-    private PreparedStatement comando;
-    private ResultSet resultado;
-    //private String hostname="localhost"; // where you run the rmi registry
-    //private int port = 1099; // the port of the rmiregistry (by default it takes 1099)
-    //private String objectname="BancoDisciplinas"; // your object name in the naming service(rmiregistry)
+
+public class Server implements BancoDisciplinas {
 
     public Server() {
+        super();
+    }
+
+    private Connection connect() throws RemoteException, SQLException {
+        String driver = "com.mysql.jdbc.Driver";
+        String servidor = "jdbc:mysql://localhost:3306/projeto1";
+        String usuario = "professor";
+        String senha = "senha123";
 
         try {
-			String con = "jdbc:mysql://localhost:3306/projeto1";
-	        String user = "professor";
-	        String password = "123mudar";
-
-		    conexao = DriverManager.getConnection(con, user, password);
-
-		    if (!conexao.isClosed() ) {
-		    	System.out.println(" CONECTED TO DATABASE! ");
-		    }
-		    else {
-		    	System.out.println(" ERROR CONNECTING TO DATABASE! ");
-		    }
-        } catch (SQLException ex) {
-
-    		    System.out.println("SQLException: " + ex.getMessage());
-    		    System.out.println("SQLState: " + ex.getSQLState());
-    		    System.out.println("VendorError: " + ex.getErrorCode());
-    	}
+            Class.forName(driver).newInstance();
+            Connection con = DriverManager.getConnection(servidor, usuario, senha);
+            return con;
+        } catch(SQLException ex) {
+            System.out.println("SQLException: " + ex.getMessage());
+            System.out.println("SQLState: " + ex.getSQLState());
+            System.out.println("VendorError: " + ex.getErrorCode());
+            return null;
+        } catch(Exception e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
     }
 
     // Aluno
     public String list_codes() throws RemoteException {
+        try {
+            Writer fileWriter = new FileWriter("server_operation_1.txt", true);
+            long startTime = System.currentTimeMillis();
 
-        String consulta = "SELECT CODIGO_DISCIPLINA AS CODIGO, TITULO"
-                        + "FROM DISCIPLINAS;";
+            Connection conexao = connect();
 
-        comando = conexao.prepareStatement(consulta);
+            String consulta = "SELECT CODIGO_DISCIPLINA, TITULO "
+                            + "FROM DISCIPLINAS;";
 
-        if (comando.execute()); {
-            resultado = comando.getResultSet();
+            PreparedStatement comando = conexao.prepareStatement(consulta);
+
+            ResultSet resultado = comando.executeQuery();
+
+            ResultSetMetaData rsmd = resultado.getMetaData();
+
+            StringBuilder resultString = new StringBuilder();
+
+            for(int i = 1; i <= rsmd.getColumnCount(); i++) {
+                resultString.append(rsmd.getColumnName(i));
+                if(i == rsmd.getColumnCount()) {
+                    resultString.append("\n");
+                } else {
+                    resultString.append(", ");
+                }
+            }
 
             while (resultado.next()) {
-               System.out.println("Codigo: " + resultado.getString("CODIGO") );
-               System.out.println("Nome: " + resultado.getString("TITULO") );
-               System.out.println();
+               resultString.append(resultado.getString(1) + ", ");
+               resultString.append(resultado.getString(2) + "\n");
             }
+
+            comando.clearParameters();
+            resultado.close();
+            comando.close();
+            conexao.close();
+
+            long diffTime = System.currentTimeMillis() - startTime;
+            fileWriter.write(diffTime + "\n");
+            fileWriter.close();
+
+            return resultString.toString();
+
+        } catch(SQLException ex) {
+           System.out.println(ex.getMessage());
+           return null;
+        } catch(Exception e){
+           System.out.println(e.getMessage());
+           return null;
         }
-        comando.clearParameters();
     }
 
-    public String get_ementa(String search_code) throws RemoteException {
+    public String get_ementa(String search_code) throws RemoteException, SQLException {
+        try {
+            Writer fileWriter = new FileWriter("server_operation_2.txt", true);
+            long startTime = System.currentTimeMillis();
 
-        String consulta = "SELECT EMENTA"
-                        + "FROM DISCIPLINAS"
-                        + "WHERE CODIGO_DISCIPLINA = ?;";
+            Connection conexao = connect();
 
-        comando = conexao.prepareStatement(consulta);
+            String consulta = "SELECT EMENTA "
+                            + "FROM DISCIPLINAS "
+                            + "WHERE CODIGO_DISCIPLINA = ? ;";
 
-        comando.setString(1,search_code);
+            PreparedStatement comando = conexao.prepareStatement(consulta);
 
-        if (comando.execute()); {
-            resultado = comando.getResultSet();
+            comando.setString(1,search_code);
+
+            ResultSet resultado = comando.executeQuery();
+
+            StringBuilder resultString = new StringBuilder();
 
             while (resultado.next()) {
-               System.out.println("Ementa: " + resultado.getString("EMENTA") );
-               System.out.println();
+               resultString.append("Ementa: " + resultado.getString(1) + "\n");
             }
-        }
-        comando.clearParameters();
 
+            comando.clearParameters();
+            resultado.close();
+            comando.close();
+            conexao.close();
+
+            long diffTime = System.currentTimeMillis() - startTime;
+            fileWriter.write(diffTime + "\n");
+            fileWriter.close();
+
+            return resultString.toString();
+
+        } catch(SQLException ex) {
+            System.out.println("SQLException: " + ex.getMessage());
+            System.out.println("SQLState: " + ex.getSQLState());
+            System.out.println("VendorError: " + ex.getErrorCode());
+            return null;
+        } catch(Exception e){
+           System.out.println(e.getMessage());
+           return null;
+        }
     }
 
-    public String get_comment(String search_code) throws RemoteException {
+    public String get_comment(String search_code) throws RemoteException, SQLException {
+        try {
+            Writer fileWriter = new FileWriter("server_operation_3.txt", true);
+            long startTime = System.currentTimeMillis();
 
-        String consulta = "SELECT COMENTARIO"
-                        + "FROM DISCIPLINAS"
-                        + "WHERE CODIGO_DISCIPLINA = ?;";
+            Connection conexao = connect();
 
-        comando = conexao.prepareStatement(consulta);
+            String consulta = "SELECT COMENTARIO "
+                            + "FROM DISCIPLINAS "
+                            + "WHERE CODIGO_DISCIPLINA = ? ;";
 
-        comando.setString(1,search_code);
+            PreparedStatement comando = conexao.prepareStatement(consulta);
 
-        if (comando.execute()); {
-            resultado = comando.getResultSet();
+            comando.setString(1,search_code);
+
+            ResultSet resultado = comando.executeQuery();
+
+            StringBuilder resultString = new StringBuilder();
 
             while (resultado.next()) {
-               System.out.println("Comentario: " + resultado.getString("COMENTARIO") );
-               System.out.println();
+                resultString.append("Comentario: " + resultado.getString(1) + "\n");
             }
+
+            comando.clearParameters();
+            resultado.close();
+            comando.close();
+            conexao.close();
+
+            long diffTime = System.currentTimeMillis() - startTime;
+            fileWriter.write(diffTime + "\n");
+            fileWriter.close();
+
+            return resultString.toString();
+
+        } catch(SQLException ex) {
+            System.out.println("SQLException: " + ex.getMessage());
+            System.out.println("SQLState: " + ex.getSQLState());
+            System.out.println("VendorError: " + ex.getErrorCode());
+            return null;
+        } catch(Exception e){
+           System.out.println(e.getMessage());
+           return null;
         }
-        comando.clearParameters();
     }
 
-    public String get_full_info(String search_code) throws RemoteException {
+    public String get_full_info(String search_code) throws RemoteException, SQLException {
+        try {
+            Writer fileWriter = new FileWriter("server_operation_4.txt", true);
+            long startTime = System.currentTimeMillis();
 
-        String consulta = "SELECT *"
-                        + "FROM DISCIPLINAS"
-                        + "WHERE CODIGO_DISCIPLINA = ?;";
+            Connection conexao = connect();
 
-        comando = conexao.prepareStatement(consulta);
+            String consulta = "SELECT * "
+                            + "FROM DISCIPLINAS "
+                            + "WHERE CODIGO_DISCIPLINA = ? ;";
 
-        comando.setString(1,search_code);
+            PreparedStatement comando = conexao.prepareStatement(consulta);
 
-        if (comando.execute()); {
-            resultado = comando.getResultSet();
+            comando.setString(1,search_code);
+
+            System.out.println("String para buscar:" + search_code);
+
+            ResultSet resultado = comando.executeQuery();
+
+            StringBuilder resultString = new StringBuilder();
 
             while (resultado.next()) {
-               System.out.println("Nome: " + resultado.getString("NOME_COMPLETO") );
-               System.out.println("Titulo da Tese: " + resultado.getString("TITULO_DA_DISSERTACAO_TESE") );
-               System.out.println();
+                resultString.append("Codigo: " + resultado.getString(1) + "\n");
+                resultString.append("Titulo: " + resultado.getString(2) + "\n");
+                resultString.append("Ementa: " + resultado.getString(3) + "\n");
+                resultString.append("Sala: " + resultado.getString(4) + "\n");
+                resultString.append("Horario: " + resultado.getString(5) + "\n");
+                resultString.append("Comentario: " + resultado.getString(6) + "\n");
             }
+
+            comando.clearParameters();
+            resultado.close();
+            comando.close();
+            conexao.close();
+
+            System.out.println("Resultado:" + resultString.toString());
+
+            long diffTime = System.currentTimeMillis() - startTime;
+            fileWriter.write(diffTime + "\n");
+            fileWriter.close();
+
+            return resultString.toString();
+
+        } catch(SQLException ex) {
+            System.out.println("SQLException: " + ex.getMessage());
+            System.out.println("SQLState: " + ex.getSQLState());
+            System.out.println("VendorError: " + ex.getErrorCode());
+            return null;
+        } catch(Exception e){
+           System.out.println(e.getMessage());
+           return null;
         }
-        comando.clearParameters();
     }
 
-    public String get_all_info() throws RemoteException {
+    public String get_all_info() throws RemoteException, SQLException {
+        try {
+            Writer fileWriter = new FileWriter("server_operation_5.txt", true);
+            long startTime = System.currentTimeMillis();
 
-        String consulta = "SELECT *"
-                        + "FROM DISCIPLINAS;";
+            Connection conexao = connect();
 
-        comando = conexao.prepareStatement(consulta);
+            String consulta = "SELECT * "
+                            + "FROM DISCIPLINAS;";
 
-        if (comando.execute()); {
-            resultado = comando.getResultSet();
+            PreparedStatement comando = conexao.prepareStatement(consulta);
+
+            ResultSet resultado = comando.executeQuery();
+
+            ResultSetMetaData rsmd = resultado.getMetaData();
+
+            StringBuilder resultString = new StringBuilder();
+
+            for(int i = 1; i <= rsmd.getColumnCount(); i++) {
+                resultString.append(rsmd.getColumnName(i));
+                if(i == rsmd.getColumnCount()) {
+                    resultString.append("\n");
+                } else {
+                    resultString.append(", ");
+                }
+            }
 
             while (resultado.next()) {
-               System.out.println("Nome: " + resultado.getString("NOME_COMPLETO") );
-               System.out.println("Titulo da Tese: " + resultado.getString("TITULO_DA_DISSERTACAO_TESE") );
-               System.out.println();
+               resultString.append(resultado.getString(1) + ", " );
+               resultString.append(resultado.getString(2) + ", " );
+               resultString.append(resultado.getString(3) + ", " );
+               resultString.append(resultado.getString(4) + ", " );
+               resultString.append(resultado.getString(5) + ", " );
+               resultString.append(resultado.getString(6) + "\n" );
             }
+
+            comando.clearParameters();
+            resultado.close();
+            comando.close();
+            conexao.close();
+
+            long diffTime = System.currentTimeMillis() - startTime;
+            fileWriter.write(diffTime + "\n");
+            fileWriter.close();
+
+            return resultString.toString();
+
+        } catch(SQLException ex) {
+            System.out.println("SQLException: " + ex.getMessage());
+            System.out.println("SQLState: " + ex.getSQLState());
+            System.out.println("VendorError: " + ex.getErrorCode());
+            return null;
+        } catch(Exception e){
+           System.out.println(e.getMessage());
+           return null;
         }
-        comando.clearParameters();
     }
 
     // Professor
-    public String write_comment(String search_code, String comment) throws RemoteException {
+    public int write_comment(String search_code, String comment) throws RemoteException, SQLException {
+        try {
+            Writer fileWriter = new FileWriter("server_operation_6.txt", true);
+            long startTime = System.currentTimeMillis();
 
-        String consulta = "UPDATE DISCIPLINAS"
-                        + "SET COMENTARIO = ?"
-                        + "WHERE CODIGO_DISCIPLINA = ?;";
+            Connection conexao = connect();
 
-        comando = conexao.prepareStatement(consulta);
+            String consulta = "UPDATE DISCIPLINAS "
+                            + "SET COMENTARIO = ? "
+                            + "WHERE CODIGO_DISCIPLINA = ? ;";
 
-        comando.setString(1,search_code);
-        comando.setString(2,comment);
+            PreparedStatement comando = conexao.prepareStatement(consulta);
 
-        if (comando.execute()); {
-            resultado = comando.getResultSet();
+            comando.setString(1,comment);
+            comando.setString(2,search_code);
 
-            while (resultado.next()) {
-               System.out.println("Nome: " + resultado.getString("NOME_COMPLETO") );
-               System.out.println("Titulo da Tese: " + resultado.getString("TITULO_DA_DISSERTACAO_TESE") );
-               System.out.println();
-            }
+            int resultado = comando.executeUpdate();
+
+            comando.clearParameters();
+            comando.close();
+            conexao.close();
+
+            long diffTime = System.currentTimeMillis() - startTime;
+            fileWriter.write(diffTime + "\n");
+            fileWriter.close();
+
+            return resultado;
+
+        } catch(SQLException ex) {
+            System.out.println("SQLException: " + ex.getMessage());
+            System.out.println("SQLState: " + ex.getSQLState());
+            System.out.println("VendorError: " + ex.getErrorCode());
+            return 0;
+        } catch(Exception e){
+           System.out.println(e.getMessage());
+           return 0;
         }
-        comando.clearParameters();
     }
 
     // Inicia Server
@@ -177,13 +342,13 @@ public class Server extends UnicastRemoteObject implements BancoDisciplinas {
         if (System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());
         }
+
         try {
-            LocateRegistry.createRegistry(1099);
             Server server = new Server();
             BancoDisciplinas stub = (BancoDisciplinas) UnicastRemoteObject.exportObject(server, 0);
 
             // Bind the remote object's stub in the registry
-            Registry registry = LocateRegistry.getRegistry(1099);
+            Registry registry = LocateRegistry.getRegistry();
             registry.rebind("BancoDisciplinas", stub);
 
             System.err.println("Server ready");
@@ -191,15 +356,5 @@ public class Server extends UnicastRemoteObject implements BancoDisciplinas {
             System.err.println("Server exception: " + e.toString());
             e.printStackTrace();
         }
-
-	    if(resultado != null) {
-	    	resultado.close();
-	    }
-	    if(comando != null) {
-	    	comando.close();
-	    }
-	    if(conexao != null) {
-	    	conexao.close();
-	    }
     }
 }
