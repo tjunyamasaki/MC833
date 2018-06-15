@@ -5,6 +5,9 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Scanner;
 
+import java.io.*;
+
+
 public class BancoDiscClient {
 
     private BancoDiscClient() {}
@@ -28,6 +31,7 @@ public class BancoDiscClient {
     //    String write_comment(String search_code, String comment) throws RemoteException;
 
      // Operacoes dos alunos/professores
+
     public void list_codes(BancoDisciplinas stub) {
 
     	System.out.println("-------------------------------------------------------");
@@ -37,7 +41,20 @@ public class BancoDiscClient {
       String response = null;
 
       try {
-  			response = stub.list_codes();
+        long before = System.currentTimeMillis();
+        response = stub.list_codes();
+        long dif = System.currentTimeMillis() - before;
+        System.out.println("Time: " + dif);
+
+        try{
+          Writer fileWriter = new FileWriter("client_operation_1.txt", true);
+          fileWriter.write(dif + "\n");
+          fileWriter.close();
+        }
+        catch(Exception e){
+          System.out.println("Deu erro!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
+
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
@@ -53,13 +70,27 @@ public class BancoDiscClient {
 
     	System.out.println("Digite o codigo da disciplina desejada:");
       Scanner buf = new Scanner(System.in);
-      String garbage = buf.nextLine();
-    	String userInput = reader.nextLine();
+    	String userInput = buf.nextLine();
 
       String response = null;
 
       try {
-  			response = stub.get_ementa(userInput);
+        long before = System.currentTimeMillis() ;
+        response = stub.get_ementa(userInput);
+        long after = System.currentTimeMillis() ;
+
+        long dif = after - before;
+
+        try{
+          Writer fileWriter = new FileWriter("client_operation_2.txt", true);
+          fileWriter.write(dif + "\n");
+          fileWriter.close();
+        }
+        catch(Exception e){
+          System.out.println("Deu erro!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
+
+        System.out.println("Time: " + dif);
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
@@ -77,12 +108,26 @@ public class BancoDiscClient {
     	System.out.println("Digite o codigo da disciplina desejada:");
 
       Scanner buf = new Scanner(System.in);
-      String garbage = buf.nextLine();
-    	String userInput = reader.nextLine();
+    	String userInput = buf.nextLine();
 
       String response = null;
   		try {
-  			response = stub.get_comment(userInput);
+        long before = System.currentTimeMillis() ;
+        response = stub.get_comment(userInput);
+        long after = System.currentTimeMillis() ;
+
+        long dif = after - before;
+
+        try{
+          Writer fileWriter = new FileWriter("client_operation_3.txt", true);
+          fileWriter.write(dif + "\n");
+          fileWriter.close();
+        }
+        catch(Exception e){
+          System.out.println("Deu erro!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
+
+        System.out.println("Time: " + dif);
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
@@ -98,12 +143,26 @@ public class BancoDiscClient {
 
     	System.out.println("Digite o codigo da disciplina desejada:");
       Scanner buf = new Scanner(System.in);
-      String garbage = buf.nextLine();
-    	String userInput = reader.nextLine();
+    	String userInput = buf.nextLine();
 
       String response = null;
   		try {
-  			response = stub.get_full_info(userInput);
+        long before = System.currentTimeMillis() ;
+        response = stub.get_full_info(userInput);
+        long after = System.currentTimeMillis() ;
+
+        long dif = after - before;
+
+        try{
+          Writer fileWriter = new FileWriter("client_operation_4.txt", true);
+          fileWriter.write(dif + "\n");
+          fileWriter.close();
+        }
+        catch(Exception e){
+          System.out.println("Deu erro!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
+
+        System.out.println("Time: " + dif);
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
@@ -120,7 +179,22 @@ public class BancoDiscClient {
 
       String response = null;
   		try {
-  			response = stub.get_all_info();
+        long before = System.currentTimeMillis() ;
+        response = stub.get_all_info();
+        long after = System.currentTimeMillis() ;
+
+        long dif = after - before;
+
+        try{
+          Writer fileWriter = new FileWriter("client_operation_5.txt", true);
+          fileWriter.write(dif + "\n");
+          fileWriter.close();
+        }
+        catch(Exception e){
+          System.out.println("Deu erro!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
+
+        System.out.println("Time: " + dif);
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
@@ -138,16 +212,32 @@ public class BancoDiscClient {
 
     	System.out.println("Digite o codigo da disciplina desejada:");
       Scanner buf = new Scanner(System.in);
-      String garbage = buf.nextLine();
-    	String search_code = reader.nextLine();
+    	String search_code = buf.nextLine();
 
     	System.out.println("Digite o comentario que deseja inserir em" + search_code + ":");
-      garbage = buf.nextLine();
-    	String comment = reader.nextLine();
+    	String comment = buf.nextLine();
 
       int response = 0;
+
+      // System.out.println(search_code);
+      // System.out.println(comment);
   		try {
-  			response = stub.write_comment(search_code, comment);
+        long before = System.currentTimeMillis() ;
+        response = stub.write_comment(search_code, comment);
+        long after = System.currentTimeMillis() ;
+
+        long dif = after - before;
+
+        try{
+          Writer fileWriter = new FileWriter("client_operation_6.txt", true);
+          fileWriter.write(dif + "\n");
+          fileWriter.close();
+        }
+        catch(Exception e){
+          System.out.println("Deu erro!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
+
+        System.out.println("Time: " + dif);
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
@@ -206,6 +296,11 @@ public class BancoDiscClient {
     public static void main(String[] args) {
 
         Scanner reader = new Scanner(System.in);
+
+        System.setProperty("java.security.policy","file:C:/Users/tjuny/Desktop/UNICAMP/MC833/rmi-project/security.policy");
+        if (System.getSecurityManager() == null) {
+            System.setSecurityManager(new SecurityManager());
+        }
 
         String host = (args.length < 1) ? null : args[0];
         try {

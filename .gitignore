@@ -54,3 +54,5 @@ rmi-project/RemoteSystemsTempFiles
 rmi-project/.metadata
 rmi-project/.classpath
 rmi-project/.project
+
+rmi-project/security\.policy
