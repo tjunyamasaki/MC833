@@ -9,5 +9,5 @@ public interface BancoDisciplinas extends Remote {
     String get_full_info(String search_code) throws RemoteException;
     String get_all_info() throws RemoteException;
     // Professor
-    String write_comment(String search_code, String comment) throws RemoteException;
+    int write_comment(String search_code, String comment) throws RemoteException;
 }
