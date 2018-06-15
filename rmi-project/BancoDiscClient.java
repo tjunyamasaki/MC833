@@ -4,6 +4,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Scanner;
+import java.sql.SQLException;
 
 import java.io.*;
 
@@ -58,7 +59,12 @@ public class BancoDiscClient {
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
-  		}
+  		} catch(SQLException ex) {
+          System.out.println("SQLException: " + ex.getMessage());
+          System.out.println("SQLState: " + ex.getSQLState());
+          System.out.println("VendorError: " + ex.getErrorCode());
+
+      }
       System.out.println(response);
     }
 
@@ -94,7 +100,12 @@ public class BancoDiscClient {
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
-  		}
+  		} catch(SQLException ex) {
+          System.out.println("SQLException: " + ex.getMessage());
+          System.out.println("SQLState: " + ex.getSQLState());
+          System.out.println("VendorError: " + ex.getErrorCode());
+
+      }
       System.out.println(response);
 
     }
@@ -131,7 +142,12 @@ public class BancoDiscClient {
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
-  		}
+  		} catch(SQLException ex) {
+          System.out.println("SQLException: " + ex.getMessage());
+          System.out.println("SQLState: " + ex.getSQLState());
+          System.out.println("VendorError: " + ex.getErrorCode());
+
+      }
       System.out.println(response);
     }
 
@@ -166,7 +182,12 @@ public class BancoDiscClient {
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
-  		}
+  		} catch(SQLException ex) {
+          System.out.println("SQLException: " + ex.getMessage());
+          System.out.println("SQLState: " + ex.getSQLState());
+          System.out.println("VendorError: " + ex.getErrorCode());
+
+      }
     	System.out.println(response);
     }
 
@@ -198,7 +219,12 @@ public class BancoDiscClient {
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
-  		}
+  		} catch(SQLException ex) {
+          System.out.println("SQLException: " + ex.getMessage());
+          System.out.println("SQLState: " + ex.getSQLState());
+          System.out.println("VendorError: " + ex.getErrorCode());
+
+      }
       System.out.println(response);
     }
 
@@ -241,7 +267,12 @@ public class BancoDiscClient {
   		} catch (RemoteException e) {
   			// TODO Auto-generated catch block
   			e.printStackTrace();
-  		}
+  		} catch(SQLException ex) {
+          System.out.println("SQLException: " + ex.getMessage());
+          System.out.println("SQLState: " + ex.getSQLState());
+          System.out.println("VendorError: " + ex.getErrorCode());
+
+      }
 
       if(response==1){
         System.out.println("Comentario adicionado com sucesso.");
